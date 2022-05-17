@@ -13,7 +13,6 @@
 #include <device.h>
 #include <devicetree.h>
 #include <drivers/gpio.h>
-
 #include <sys/util.h>
 #include <sys/printk.h>
 #include <stdio.h>
@@ -48,49 +47,56 @@ int hci_command_interpret(struct HCI_Message *hci_recieve_packet,
 
 	// Switching over the DID portion of the data (first byte is DID)
 	switch(hci_recieve_packet->did) {
-#ifdef CONFIG_MOBILE
+#ifdef CONFIG_HTS221
 	case HTS221_TEMPERATURE:
 		scu_process_hts221_sample();
 		hci_response_packet->did = HTS221_TEMPERATURE;
-		memcpy(hci_response_packet->data, &(current_sensor_data.temperature),
-			sizeof(current_sensor_data.temperature));
+		memcpy(hci_response_packet->data, &(currentSensorData.temperature),
+			sizeof(currentSensorData.temperature));
 		break;
 	case HTS221_HUMIDITY:
 		scu_process_hts221_sample();
 		hci_response_packet->did = HTS221_HUMIDITY;
-		memcpy(hci_response_packet->data, &(current_sensor_data.humidity),
-			sizeof(current_sensor_data.humidity));
+		memcpy(hci_response_packet->data, &(currentSensorData.humidity),
+			sizeof(currentSensorData.humidity));
 		break;
-	case LPS22_AIR_PRESSURE:
+#endif
+#ifdef CONFIG_LPS22HB
+	case LPS22HB_AIR_PRESSURE:
 		scu_process_lps22hb_sample();
 		hci_response_packet->did = LPS22_AIR_PRESSURE;
-		memcpy(hci_response_packet->data, &(current_sensor_data.pressure),
-			sizeof(current_sensor_data.pressure));
+		memcpy(hci_response_packet->data, &(currentSensorData.pressure),
+			sizeof(currentSensorData.pressure));
 		break;
+#endif
+#ifdef CONFIG_CCS811
 	case CCS811_VOC:
 		scu_process_ccs811_sample();
 		hci_response_packet->did = CCS811_VOC;
-		memcpy(hci_response_packet->data, &(current_sensor_data.voc),
-			sizeof(current_sensor_data.voc));
+		memcpy(hci_response_packet->data, &(currentSensorData.voc),
+			sizeof(currentSensorData.voc));
 		break;
+#endif
+#ifdef CONFIG_LIS2DH
 	case LIS2DH_X_ACCELERATION:
 		scu_process_lis2dh_sample();
 		hci_response_packet->did = LIS2DH_X_ACCELERATION;
-		memcpy(hci_response_packet->data, &(current_sensor_data.acceleration[0]),
-			sizeof(current_sensor_data.acceleration[0]));
+		memcpy(hci_response_packet->data, &(currentSensorData.acceleration[0]),
+			sizeof(currentSensorData.acceleration[0]));
 		break;
 	case LIS2DH_Y_ACCELERATION:
 		scu_process_lis2dh_sample();
 		hci_response_packet->did = LIS2DH_Y_ACCELERATION;
-		memcpy(hci_response_packet->data, &(current_sensor_data.acceleration[1]),
-			sizeof(current_sensor_data.acceleration[1]));
+		memcpy(hci_response_packet->data, &(currentSensorData.acceleration[1]),
+			sizeof(currentSensorData.acceleration[1]));
 		break;
 	case LIS2DH_Z_ACCELERATION:
 		scu_process_lis2dh_sample();
 		hci_response_packet->did = LIS2DH_Z_ACCELERATION;
-		memcpy(hci_response_packet->data, &(current_sensor_data.acceleration[2]),
-			sizeof(current_sensor_data.acceleration[2]));
+		memcpy(hci_response_packet->data, &(currentSensorData.acceleration[2]),
+			sizeof(currentSensorData.acceleration[2]));
 		break;
+#endif
 	case RGB_LED:
 		if (scu_io_led_init(hci_recieve_packet->data[1]) < 0)
 			return -1;
@@ -100,9 +106,11 @@ int hci_command_interpret(struct HCI_Message *hci_recieve_packet,
 		}
 		printk("Toggle has passed through\n");
 		break;
+#ifdef CONFIG_SPEAKER
 	case BUZZER:
 		printk("Speaker should be working");
 		break;
+#endif
 	case PUSHBUTTON:
 		if(scu_io_pb_init() < 0)
 			return -1;
@@ -115,6 +123,8 @@ int hci_command_interpret(struct HCI_Message *hci_recieve_packet,
 			hci_response_packet->data[0] = val;
 		break;
 	case 'a':
+		// TODO: Reconfigure this section
+		/*
 		if(!thread_running_flag) {
 			thread_running_flag = 1;
 			k_sem_give(&cts_mode_sem);
@@ -122,10 +132,9 @@ int hci_command_interpret(struct HCI_Message *hci_recieve_packet,
 			thread_running_flag = 0;
 			k_sem_take(&cts_mode_sem, K_FOREVER);
 		}
-		break;
-#endif
+		break;*/
 	case 'd':
-
+		// TODO: Power management
 		break;
 	case 's':
 		samp_time += hci_recieve_packet->data[1] << 8;

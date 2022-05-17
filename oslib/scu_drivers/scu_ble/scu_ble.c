@@ -337,81 +337,6 @@ void bt_ready(void) {
 }
 
 /**
- * @brief 
- * 
- * @param addr 
- * @param rssi 
- * @param type 
- * @param ad 
- */
-/*
-void device_found(const bt_addr_le_t *addr, int8_t rssi, uint8_t type, struct net_buf_simple *ad) {
-	char dev[BT_ADDR_LE_STR_LEN];
-	char addr_str[BT_ADDR_LE_STR_LEN];
-
-	bt_addr_le_to_str(addr, dev, sizeof(dev));
-
-	if (type == BT_GAP_ADV_TYPE_ADV_IND ||
-	    type == BT_GAP_ADV_TYPE_ADV_DIRECT_IND) {
-
-		bt_addr_le_to_str(addr, addr_str, sizeof(addr_str));
-
-		// find the data sent
-		k_msleep(SHORT_SLEEP_MS);
-		
-		printk("%s, (RSSI): %d\n", addr_str, rssi);
-		
-		int flgCnt = 0;
-		for (int i = 0; i < NUM_STATIC_NODES--; i++) {
-			if (node_packets[i].dataFlag) {
-				flgCnt++;
-				if (flgCnt == NUM_STATIC_NODES) {
-					k_sem_give(&adv_sem);
-					flgCnt = 0;
-				}
-			}
-
-			if (!strcmp(node_packets[i].addr, addr_str)) {
-				
-				node_packets[i].rssi = rssi;
-				//TODO: Figure out how to put advertisement data here
-				node_packets[i].distance = -1;
-				node_packets[i].time = k_uptime_get();
-				node_packets[i].dataReady = 1;
-				//bt_data_parse(ad, eir_found, (void *)addr);				
-			}
-		}
-	}
-}
-*/
-
-/* start scanning - print out advertisements received
-	check the uuid of the advertisement and only print 
-	out if it is the expected uuid of a static node */
-	/*
-void start_scan(void) {
-	int err;
-
-	// Use active scanning and disable duplicate filtering to handle any
-	// devices that might update their advertising data at runtime.
-	struct bt_le_scan_param scan_param = {
-		.type       = BT_LE_SCAN_TYPE_ACTIVE,
-		.options    = BT_LE_SCAN_OPT_NONE,
-		.interval   = BT_GAP_SCAN_FAST_INTERVAL,
-		.window     = BT_GAP_SCAN_FAST_WINDOW,
-	};
-
-	err = bt_le_scan_start(&scan_param, device_found);
-	if (err) {
-		printk("Scanning failed to start (err %d)", err);
-		return;
-	}
-
-	printk("Scanning successfully started");
-}
-*/
-
-/**
  * @brief Enables bluetooth, and sets connection callback handler, awaits central to connect to
  *	peripheral (mobile)
  * 
@@ -426,12 +351,7 @@ void thread_ble_connect(void) {
 	}
 }
 
-
-#ifdef CONFIG_MOBILE
-/**
- * @brief Sends HCI Messages to the AHU
- * 
- */
+/* TODO: Figure out how to implement HCI into the gatt write and abstract BLE as much as possible
 void thread_ble_response(void) {
 	while(1) {
 		// Checks to see if ready message signal has been sent by the ble response callback
@@ -498,4 +418,4 @@ void thread_ble_response(void) {
 		k_msleep(5);
 	}
 }
-#endif
+*/

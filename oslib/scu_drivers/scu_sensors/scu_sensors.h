@@ -17,19 +17,18 @@
 #include <drivers/sensor.h>
 #include <drivers/sensor/ccs811.h>
 
-//Thread Definitions
-#define THREAD_SCU_SENSOR_STACK 1024
-#define THREAD_SCU_SENSOR_PRIORITY 3
-
 // Other Defines
 #define SAMPLING_TIME_DEFAULT 1
-#define TRIG_PIN 2
-#define ECHO_PIN 1
+
+// Hash defines for the ultrasonic sensor
 #define TRIG_PULSE_US 11
 #define INVALID_PULSE_US 25000
 #define MAX_WAIT_MS 130
 #define ERR_WAIT_US 145
 #define SPEED_OF_SOUND 343 // in m/s (meters per second)
+// Adjust these pins based on the usage of your board
+#define TRIG_PIN 2
+#define ECHO_PIN 1
 
 struct scuSensorData {
 	double temperature;
@@ -41,17 +40,13 @@ struct scuSensorData {
 	int16_t distance;
 };
 
-/* Thread variables */
-extern const k_tid_t scu_sensors_thread_tid;
-extern const k_tid_t scu_ultrasonic_thread_tid; 
-extern struct k_sem sensor_logging_sem;
-extern struct k_sem cts_mode_sem;
-extern struct k_mutex us_mutex;
-extern struct k_sem us_sem;
+/* Thread safety variables */
+extern struct k_mutex scuMutex;
+extern struct k_sem usSem;
 
 /* Program variables */
-extern struct scuSensorData current_sensor_data;
-extern int thread_running_flag;
+extern struct scuSensorData currentSensorData;
+extern int threadRunFlag;
 
 /* Function Prototypes..*/
 const struct device* scu_sensors_init(char *);
@@ -61,9 +56,5 @@ void scu_process_hts221_sample(void);
 void scu_process_lis2dh_sample(void);
 void scu_process_ccs811_sample(void);
 void scu_process_ultrasonic_sample(void);
-
-/* Thread Prototypes */
-void thread_scu_sensors(void);
-void thread_scu_ultrasonic(void);
 
 #endif

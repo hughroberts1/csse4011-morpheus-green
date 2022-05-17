@@ -19,7 +19,7 @@ work.
 ## Project and Scenario Description 
 
 ## Key Performance Indicators
-### how is the ’success’ of the project measured?
+### How is the ’success’ of the project measured?
 
 * KPI1: 
 * KPI2: 
