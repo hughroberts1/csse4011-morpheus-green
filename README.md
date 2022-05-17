@@ -11,6 +11,9 @@ work.
 
 # Team Member List and Roles 
 
+* Oliver Roman - Mobile and bluetooth mesh, web dashboard?
+* Hugh Roberts - Base and bluetooth mesh, web dashboard?
+
 # Project Overview / Scenario
 
 ## Project and Scenario Description 
