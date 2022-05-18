@@ -15,14 +15,14 @@
 #define HTS221_HUMIDITY 2
 #define LPS22HB_AIR_PRESSURE 3
 #define CCS811_VOC 4
-#define LIS2DH_X_ACCELERATION 5
-#define LIS2DH_Y_ACCELERATION 6
-#define LIS2DH_Z_ACCELERATION 7
-#define RGB_LED 8
-#define BUZZER 9
-#define PUSHBUTTON 10
-//TODO: Apparently ultrasonic needs to be 6 but its already taken
-#define ULTRASONIC 11
+#define CCS811_CO2 5
+#define LIS2DH_X_ACCELERATION 6
+#define LIS2DH_Y_ACCELERATION 7
+#define LIS2DH_Z_ACCELERATION 8
+#define RGB_LED 9
+#define BUZZER 10
+#define PUSHBUTTON 11
+#define ULTRASONIC 12
 
 struct __attribute__((packed)) HCI_Message {
 	uint8_t preamble;

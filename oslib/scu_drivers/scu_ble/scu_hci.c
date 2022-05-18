@@ -76,6 +76,12 @@ int hci_command_interpret(struct HCI_Message *hci_recieve_packet,
 		memcpy(hci_response_packet->data, &(currentSensorData.voc),
 			sizeof(currentSensorData.voc));
 		break;
+	case CCS811_CO2:
+		scu_process_ccs811_sample();
+		hci_response_packet->did = CCS811_CO2;
+		memcpy(hci_response_packet->data, &(currentSensorData.co2),
+			sizeof(currentSensorData.co2));
+		break;
 #endif
 #ifdef CONFIG_LIS2DH
 	case LIS2DH_X_ACCELERATION:

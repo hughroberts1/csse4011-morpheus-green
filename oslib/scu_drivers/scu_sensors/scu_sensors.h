@@ -31,12 +31,13 @@
 #define ECHO_PIN 1
 
 struct scuSensorData {
-	double temperature;
-	double humidity;
-	double pressure;
+	float temperature;
+	float humidity;
+	float pressure;
 	// In order x, y, z
-	double acceleration[3];
-	double voc;
+	float acceleration[3];
+	float voc;
+	float co2;
 	int16_t distance;
 };
 

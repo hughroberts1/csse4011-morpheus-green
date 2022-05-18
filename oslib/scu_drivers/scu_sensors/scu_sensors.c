@@ -155,7 +155,7 @@ void scu_process_lis2dh_sample(void) {
 void scu_process_ccs811_sample(void) {
 	
 	const struct device *dev = scu_sensors_init("CCS811");
-	struct sensor_value tvoc;
+	struct sensor_value tvoc, co2;
 	int err = 0;
 
 	if (k_mutex_lock(&scuMutex, K_FOREVER) != 0) {
@@ -170,9 +170,11 @@ void scu_process_ccs811_sample(void) {
 	if (err == 0) {
 		const struct ccs811_result_type *res = ccs811_result(dev);
 		sensor_channel_get(dev, SENSOR_CHAN_VOC, &tvoc);
-		currentSensorData.voc = sensor_value_to_double(&tvoc);
-		printk("Amount of VOC is: %f ppb eTVOC\n", currentSensorData.voc);
-
+		currentSensorData.voc = (float)sensor_value_to_double(&tvoc);
+		sensor_channel_get(dev, SENSOR_CHAN_CO2, &c02);
+		currentSensorData.co2 = (float)sensor_value_to_double(&co2);
+		printk("Amount of VOC is: %f ppb eTVOC and CO2 is: %f ppb\n", currentSensorData.voc,
+		       currentSensorData.co2);
 		if (rp->status & CCS811_STATUS_ERROR) {
 			printk("ERROR: %02x\n", rp->error);
 		}
