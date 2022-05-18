@@ -61,9 +61,9 @@ work.
 
 ## Sensor Integration 
 The sensors that will be used in this project are the following: 
-    - HTS221 for temperature and humidity readings
-    - LPS22HB for Air Pressure readings
-    - CCS811 for CO2 and TVOC readings 
+    * HTS221 for temperature and humidity readings
+    * LPS22HB for Air Pressure readings
+    * CCS811 for CO2 and TVOC readings 
 All of the sensor data will be stored as floats for decimal precision. All of the sensors used are onboard the Thingy:52 and are accessed in code through devicetree keybindings in their drivers. 
 
 ## Wireless Network Communication
