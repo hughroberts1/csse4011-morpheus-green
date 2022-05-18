@@ -59,6 +59,11 @@ work.
 ## System Overview
 ### (Hardware Architecture - block diagram of system, Top-level flow chart of software implementation (mote and PC)
 
+0. Hardware Block Diagram. 
+
+    ![hardware](mobile_block.drawio(1).png)
+    
+
 1. Mobile flowchart. 
 
     ![mobile](mobile_flowchart.drawio.png)
