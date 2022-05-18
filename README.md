@@ -59,6 +59,12 @@ work.
 ## System Overview
 ### (Hardware Architecture - block diagram of system, Top-level flow chart of software implementation (mote and PC)
 
+1. Top-level flow chart of software implementation.  
+
+    ![mobile](mobile_flowchart.drawio.png)
+    
+2. 
+
 ## Sensor Integration 
 The sensors that will be used in this project are the following: 
 * HTS221 for temperature and humidity readings
