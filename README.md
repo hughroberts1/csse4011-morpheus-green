@@ -108,7 +108,7 @@ All of the sensor data will be stored as floats for decimal precision. All of th
 * Solar panel 
 * DFRobot Solar Power Manager
 * LiPo battery cell 
-* Cables (micro USB, M-F connectors
+* Cables (micro USB, M-F connectors)
 
 # 5 - Progress
 
