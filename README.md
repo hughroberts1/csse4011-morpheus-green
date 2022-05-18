@@ -41,7 +41,7 @@ work.
     - Efficient code so that minimal instructions are executed to conserve power 
     - Connected to solar charging battery 
 * **KPI3: Sensor Integration**
-    - Receive weather and air quality readings from Thingy:52 / Argon 
+    - Receive weather and air quality readings from Thingy:52 / Argon (Temperature, humidity, air pressure, CO2 and VOC levels)
     - Validate the accuracy of readings 
 * **KPI4: Web Dashboard**
     - Interactive Graphical User Interface
