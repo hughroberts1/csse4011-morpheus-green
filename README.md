@@ -60,7 +60,7 @@ work.
 ### (Hardware Architecture - block diagram of system, Top-level flow chart of software implementation (mote and PC)
 
 ## Sensor Integration 
-### What sensors are used? What type of data is required? How are the sensors integrated?
+The sensors that will be used in this project are the following: HTS221 for temperature and humidity readings, LPS22HB for Air Pressure readings and  the CCS811 for CO2 and TVOC readings. All of the sensor data will be stored as floats for decimal precision. All of the sensors used are onboard the Thingy:52 and are accessed in code through devicetree keybindings in their drivers. 
 
 ## Wireless Network Communication
 ### What is the network topology used? What network protocols are used and how? What is sort of data rate is required? Should also include a message protocol diagram.
