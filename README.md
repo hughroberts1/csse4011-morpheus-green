@@ -1,7 +1,7 @@
 # csse4011-morpheus-green - Hugh Roberts, Oliver Roman
 CSSE4011 Project
 
-# Project B1 - Outdoor Air Quality and Weather Station Network 
+# 1 - Project B1 - Outdoor Air Quality and Weather Station Network 
 * Expand	your	prac 1	and	create	a	network	of atleast	2 air	quality	
 monitoring	sensors	using	the	Thingy:52 or	Argon and	the	SEN54.
 *  The	stations	should	communicate	with	each	other	and	a	base	node	via	a	
@@ -9,12 +9,12 @@ Bluetooth	Mesh	connection. Mesh	network	connection	must	be	shown	to
 work.
 * Have	a	web	dashboard	viewer.
 
-# Team Member List and Roles 
+# 2 - Team Member List and Roles 
 
 * Oliver Roman - Mobile and bluetooth mesh, web dashboard?
 * Hugh Roberts - Base and bluetooth mesh, web dashboard?
 
-# Project Overview / Scenario
+# 3 - Project Overview / Scenario
 
 ## Project and Scenario Description 
 
@@ -37,9 +37,9 @@ work.
 ### e.g. Machine learning approaches
 
 
-# Equipment
+# 4 - Equipment
 
-# Progress
+# 5 - Progress
 
 *
 * 17/05/22: Wiki setup, needs work. Oslib from previous pracs moved into repo 
