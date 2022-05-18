@@ -59,11 +59,21 @@ work.
 ## System Overview
 ### (Hardware Architecture - block diagram of system, Top-level flow chart of software implementation (mote and PC)
 
-1. Top-level flow chart of software implementation.  
+1. Mobile flowchart. 
 
     ![mobile](mobile_flowchart.drawio.png)
     
-2. 
+2. Base flowchart. 
+    
+    ![base](base_flowchart.drawio.png)
+    
+    
+3. PC flowchart. 
+
+    ![pc](pc_flowchart(1).drawio.png)
+    
+    
+
 
 ## Sensor Integration 
 The sensors that will be used in this project are the following: 
