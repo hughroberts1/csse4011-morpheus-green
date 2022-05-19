@@ -61,21 +61,21 @@ work.
 
 0. Hardware Block Diagram. 
 
-    ![hardware](mobile_block.drawio(1).png)
+    ![hardware](img/mobile_block.drawio(1).png)
     
 
 1. Mobile flowchart. 
 
-    ![mobile](mobile_flowchart.drawio.png)
+    ![mobile](img/mobile_flowchart.drawio.png)
     
 2. Base flowchart. 
     
-    ![base](base_flowchart.drawio.png)
+    ![base](img/base_flowchart.drawio.png)
     
     
 3. PC flowchart. 
 
-    ![pc](pc_flowchart(1).drawio.png)
+    ![pc](img/pc_flowchart(1).drawio.png)
     
     
 
