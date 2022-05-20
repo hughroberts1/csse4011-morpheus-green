@@ -19,15 +19,18 @@ work.
     - At least 2 mobile nodes / scalable setup
 2.  **Power Management**
     - Ensure weather station node can be powered sustainably (with the use of a solarpanel and LiPo batteries)
-    - Be able to set the sampling rate of sensors (configure duty cycle)
+    - Be able to set the sampling rate of sensors (configure duty cycle) When they are not sampling, they should be off. 
     - Efficient code so that minimal instructions are executed to conserve power
+    - Mobile Node should last without external power for a week (determine this based off extrapolating battery tests)
 3.  **Sensor Integration**
     - Receive weather and air quality readings from Thingy:52 / Argon (Temperature, humidity, air pressure, CO2 and VOC levels)
     - Validate the accuracy of readings
+    - Have sensor accuracy within 10% of acceptable range. 
 4.  **Web Dashboard**
     - Interactive Graphical User Interface
     - Basic statistical analysis of data collected
     - Validation with other data sources (BOM)
+    - Low latency (updates within seconds)
     
 5.  **Techniques/methods from lectures are used**
     - Localisation
