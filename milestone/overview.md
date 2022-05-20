@@ -65,7 +65,10 @@ The sensors that will be used in this project are the following:
 All of the sensor data will be stored as floats for decimal precision. All of the sensors used are onboard the Thingy:52 and are accessed in code through devicetree keybindings in their drivers. 
 
 ## Wireless Network Communication
-### What is the network topology used? What network protocols are used and how? What is sort of data rate is required? Should also include a message protocol diagram.
+
+* nrf Dongle will join the mesh network as a Proxy Node. This way it will be able to connect to the Thingy:52s and send information to Python listener script for web dashboard stuff 
+
+* Mobile nodes, specifically Thingy:52 devices, will connect to each other via the Bluetooth Low Energy Mesh network. 
 
 ## Algorithms schemes used
 ### e.g. Machine learning approaches
