@@ -12,9 +12,11 @@ work.
 # 2 - Team Member List and Roles 
 
 * Oliver Roman 
-    - KPI2 - all
-    - KPI3 - all
-    - KPI5 - partial (TBA)
+
+    Oliver will be responsible for the following things in this project: 
+    - Setting up the sensing systems on the Thingy52, which will include receiving valid weather and air quality readings and having them available for             bluetooth transmission (K3)
+    - Setting up the hardware connection between the Thingy52, Sunflower boards, LiPo batteries and the solar panels, aswell as implementing power management       for extended battery life with duty cycle tied to the adjustable sampling frequency on the Thingy52. (K2)
+    - Setting up Machine Learning Regression to predict storms/heavy rain in the near future (24hrs) based off current sensor values, any other possible           extensions with Data Fusion (Kalman Filtering) or Localisation will be within the scope of Oliver's work (K5)
     
 * Hugh Roberts 
     - KPI1 - Setup and test the BLE Mesh network 
