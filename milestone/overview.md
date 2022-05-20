@@ -17,6 +17,7 @@ work.
     - Bluetooth Low Energy Mesh network set up & sending messages
     - Handles exceptions and errors (edge cases) (e.g. weather station dropping out, base being disconnect etc.)
     - At least 2 mobile nodes / scalable setup
+    - Be able to cover a range of 1 km^2 with 100 nodes (determine this by extrapolating smaller tests)
 2.  **Power Management**
     - Ensure weather station node can be powered sustainably (with the use of a solarpanel and LiPo batteries)
     - Be able to set the sampling rate of sensors (configure duty cycle) When they are not sampling, they should be off. 
@@ -30,15 +31,12 @@ work.
     - Interactive Graphical User Interface
     - Basic statistical analysis of data collected
     - Validation with other data sources (BOM)
-    - Low latency (updates within seconds)
+    - Low latency (updates within 5-10 seconds)
     
-5.  **Techniques/methods from lectures are used**
-    - Localisation
-    - Mobility, tracking
-    - Time synchronization
-    - Sensing, signal processing
+5.  **Advanced Processing Techniques**
+    - Data tagged according to real time (UTC)
+    - Nodes time synchronised between each other. 
     - Machine Learning for weather prediction (storm predicted in next 24 hours?)
-    - Other 
 
 ## System Overview
 ### (Hardware Architecture - block diagram of system, Top-level flow chart of software implementation (mote and PC)
@@ -78,7 +76,7 @@ All of the sensor data will be stored as floats for decimal precision. All of th
 
 * Mobile nodes, specifically Thingy:52 devices, will connect to each other via the Bluetooth Low Energy Mesh network. 
 
-## Protocol Message Diagram
+![protocol_diagram](img/protocol_diagram.png)
 
 ![protocol_message_diagram](img/protocol_message_diagram.png)
 
