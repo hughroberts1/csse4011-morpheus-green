@@ -79,6 +79,8 @@ Need to investigate the operation of Bluetooth mesh nodes. Rough outline of how 
 
 * Mobile Nodes in range of the base node (i.e. node connected to the PC), will broadcast messages to the PC node. PC connected node will then follow a similar scheme to as described above. 
 
+![pc](img/protocol_diagram.png)
+
 ### Possible Extensions
 
 * Extending the mesh network to include an arbitrary number of weather station mobile nodes 
