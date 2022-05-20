@@ -1,30 +1,30 @@
-3 - Project Overview / Scenario
+# Project Overview / Scenario
 
 ## Project and Scenario Description 
 
 ## Key Performance Indicators
 ### How is the ’success’ of the project measured?
 
-* **KPI1: Bluetooth Communications**
+1.  **Bluetooth Communications**
     - Bluetooth Low Energy Mesh network set up
     - Appropriate packet structure for sending and receiving data 
     - Messaging protocol 
     - Handles exceptions and errors (edge cases) (e.g. weather station dropping out, base being disconnect etc.)
     - At least 2 mobile nodes / scalable setup 
-* **KPI2: Power Management**
+2.  **Power Management**
     - Ensure weather station node can be powered sustainably
     - Set sampling rate of sensors (configure duty cycle)
     - Efficient code so that minimal instructions are executed to conserve power 
     - Connected to solar charging battery 
-* **KPI3: Sensor Integration**
+3.  **Sensor Integration**
     - Receive weather and air quality readings from Thingy:52 / Argon (Temperature, humidity, air pressure, CO2 and VOC levels)
     - Validate the accuracy of readings 
-* **KPI4: Web Dashboard**
+4.  **Web Dashboard**
     - Interactive Graphical User Interface
     - Basic statistical analysis of data collected
     - Validation with other data sources (BOM)
     
-* **KPI5: Techniques/methods from lectures are used**
+5.  **Techniques/methods from lectures are used**
     - Localisation
     - Mobility, tracking
     - Time synchronization
@@ -37,7 +37,7 @@
 
 0. Hardware Block Diagram. 
 
-    ![hardware](img/mobile_block.drawio(1).png)
+    ![hardware](img/mobile_block.drawio.png)
     
 
 1. Mobile flowchart. 
@@ -51,7 +51,7 @@
     
 3. PC flowchart. 
 
-    ![pc](img/pc_flowchart(1).drawio.png)
+    ![pc](img/pc_flowchart.drawio.png)
     
     
 
