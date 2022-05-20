@@ -70,6 +70,8 @@ All of the sensor data will be stored as floats for decimal precision. All of th
 
 * Mobile nodes, specifically Thingy:52 devices, will connect to each other via the Bluetooth Low Energy Mesh network. 
 
+![pc](img/protocol_diagram.png)
+
 ## Algorithms schemes used
 ### e.g. Machine learning approaches
 
@@ -79,7 +81,7 @@ Need to investigate the operation of Bluetooth mesh nodes. Rough outline of how 
 
 * Mobile Nodes in range of the base node (i.e. node connected to the PC), will broadcast messages to the PC node. PC connected node will then follow a similar scheme to as described above. 
 
-![pc](img/protocol_diagram.png)
+
 
 ### Possible Extensions
 
