@@ -73,6 +73,12 @@ All of the sensor data will be stored as floats for decimal precision. All of th
 ## Algorithms schemes used
 ### e.g. Machine learning approaches
 
+Need to investigate the operation of Bluetooth mesh nodes. Rough outline of how it works: 
+
+* When a node receives a packet, check if it has received the packet already; if so discared. Else, check if this node is the packet's destination. If so, process the packet. Else, propogate the packet through the network (until it reaches its intended destination)
+
+* Mobile Nodes in range of the base node (i.e. node connected to the PC), will broadcast messages to the PC node. PC connected node will then follow a similar scheme to as described above. 
+
 ### Possible Extensions
 
 * Extending the mesh network to include an arbitrary number of weather station mobile nodes 
