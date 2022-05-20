@@ -76,8 +76,6 @@ All of the sensor data will be stored as floats for decimal precision. All of th
 
 * Mobile nodes, specifically Thingy:52 devices, will connect to each other via the Bluetooth Low Energy Mesh network. 
 
-![protocol_diagram](img/protocol_diagram.png)
-
 ![protocol_message_diagram](img/protocol_message_diagram.png)
 
 ## Algorithms schemes used
