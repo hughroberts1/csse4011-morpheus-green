@@ -14,19 +14,16 @@ work.
 ### How is the ’success’ of the project measured?
 
 1.  **Bluetooth Communications**
-    - Bluetooth Low Energy Mesh network set up
-    - Appropriate packet structure for sending and receiving data 
-    - Messaging protocol 
+    - Bluetooth Low Energy Mesh network set up & sending messages
     - Handles exceptions and errors (edge cases) (e.g. weather station dropping out, base being disconnect etc.)
-    - At least 2 mobile nodes / scalable setup 
+    - At least 2 mobile nodes / scalable setup
 2.  **Power Management**
-    - Ensure weather station node can be powered sustainably
-    - Set sampling rate of sensors (configure duty cycle)
-    - Efficient code so that minimal instructions are executed to conserve power 
-    - Connected to solar charging battery 
+    - Ensure weather station node can be powered sustainably (with the use of a solarpanel and LiPo batteries)
+    - Be able to set the sampling rate of sensors (configure duty cycle)
+    - Efficient code so that minimal instructions are executed to conserve power
 3.  **Sensor Integration**
     - Receive weather and air quality readings from Thingy:52 / Argon (Temperature, humidity, air pressure, CO2 and VOC levels)
-    - Validate the accuracy of readings 
+    - Validate the accuracy of readings
 4.  **Web Dashboard**
     - Interactive Graphical User Interface
     - Basic statistical analysis of data collected
