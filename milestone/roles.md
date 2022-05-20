@@ -16,3 +16,5 @@ Hugh will be responsible for the following things in this project:
 - Setting up Machine Learning Regression to predict storms/heavy rain in the near future (24hrs) based off current sensor values, any other possible           extensions with Data Fusion (Kalman Filtering) or Localisation will be within the scope of Oliver's work (K5)
 
 ## Team Photo
+
+![team_photo](img/team_photo.jpg)
