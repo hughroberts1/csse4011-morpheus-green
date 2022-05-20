@@ -80,6 +80,8 @@ All of the sensor data will be stored as floats for decimal precision. All of th
 
 ![protocol_diagram](img/protocol_diagram.png)
 
+![protocol_message_diagram](img/protocol_message_diagram.png)
+
 ## Algorithms schemes used
 ### e.g. Machine learning approaches
 
