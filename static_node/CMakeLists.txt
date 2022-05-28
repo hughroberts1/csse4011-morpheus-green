@@ -7,8 +7,6 @@ if((BOARD STREQUAL nrf51_blenano) OR (BOARD STREQUAL nrf51_ble400))
   set(CONF_FILE nrf51_qfaa.conf)
 endif()
 
-set(BOARD thingy52_nrf52832)
-
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(mesh)
 
