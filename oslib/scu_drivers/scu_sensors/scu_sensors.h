@@ -37,7 +37,7 @@ struct scuSensorData {
 	// In order x, y, z
 	float acceleration[3];
 	float voc;
-	float co2;
+	float particle;
 	int16_t distance;
 };
 

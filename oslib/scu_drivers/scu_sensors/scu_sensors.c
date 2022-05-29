@@ -21,6 +21,9 @@
 // Local Library Include
 #include "scu_sensors.h"
 #include "scu_ble.h"
+#include "sen5x_i2c.h"
+#include "sensirion_common.h"
+#include "sensirion_i2c_hal.h"
 
 // Name of the port used for the ultrasonic TODO: see how to change this with devicetree
 // Can change here now for modularity purposes
@@ -46,7 +49,8 @@ uint32_t usEndTime;
  * @brief Function for reading pressure values from the lps22hb
  * 
  */
-void scu_process_lps22hb_sample(void) {
+void scu_process_lps22hb_sample(void)
+{
 
 	const struct device *dev = scu_sensors_init("LPS22HB");
 	struct sensor_value pressure;
@@ -78,7 +82,8 @@ void scu_process_lps22hb_sample(void) {
  * @brief Function for reading temperature and humidity values from the hts221 
  * 
  */
-void scu_process_hts221_sample(void) {
+void scu_process_hts221_sample(void)
+{
 	
 	const struct device *dev = scu_sensors_init("HTS221");
 	struct sensor_value temp, hum;
@@ -117,7 +122,8 @@ void scu_process_hts221_sample(void) {
  * @brief Function for reading acceleration values from the lisd2h
  * 
  */
-void scu_process_lis2dh_sample(void) {
+void scu_process_lis2dh_sample(void)
+{
 	
 	const struct device *dev = scu_sensors_init("LIS2DH");
 	struct sensor_value accel[3];
@@ -152,7 +158,8 @@ void scu_process_lis2dh_sample(void) {
  * @brief Function for reading VOC value from the ccs811
  * 
  */
-void scu_process_ccs811_sample(void) {
+void scu_process_ccs811_sample(void)
+{
 	
 	const struct device *dev = scu_sensors_init("CCS811");
 	struct sensor_value tvoc, co2;
@@ -188,7 +195,8 @@ void scu_process_ccs811_sample(void) {
  * @brief Function for reading the distance value from the ultrasonic sensor
  * 
  */
-void scu_process_ultrasonic_sample(void) {
+void scu_process_ultrasonic_sample(void)
+{
 
 	const struct device *dev = scu_sensors_init(portName);
 
@@ -246,7 +254,8 @@ void scu_process_ultrasonic_sample(void) {
  * 
  * @param dev The device handle for the ultrasonic sensor
  */
-void echo_recieved_callback(const struct device *dev) {
+void echo_recieved_callback(const struct device *dev)
+{
 
 // Removed "struct gpio_callback *cb" if the code breaks it could be why
 	if (gpio_pin_get(dev, ECHO_PIN)) {
@@ -261,28 +270,66 @@ void echo_recieved_callback(const struct device *dev) {
 }
 #endif
 
+#ifdef CONFIG_SEN54
+/**
+ * @brief Function used to take a sample of all data sources from the SEN54
+ * 
+ */
+void scu_process_sen54_sample(void)
+{
+	int err = sen5x_start_measurement();
+    	if (err)
+        	printf("Error executing sen5x_start_measurement(): %i\n", error);
+
+	const struct device *dev = scu_sensors_init("I2C_0");
+	
+	if (k_mutex_lock(&scuMutex, K_FOREVER) != 0) {
+        	printk("The mutex could not lock\n");
+		return;
+    	}
+
+	// TODO: check if its &struct.data or &struct->data to be passed in here (make sure to pass
+	//	 by reference)
+	err = sen5x_read_measured_values(NULL, NULL, NULL, &currentSensorData->particle,
+            				 &currentSensorData->hum, &currentSensorData->temp,
+					 &currentSensorData->voc, NULL);
+	// Adjust scaling of data
+	currentSensorData.particle /= 10;
+	currentSensorData.hum /= 100;
+	currentSensorData.temp /= 200;
+	currentSensorData.voc /= 10;
+	int err = sen5x_stop_measurement();
+	if (err)
+        	printf("Error executing sen5x_stop_measurement(): %i\n", error);
+	k_mutex_unlock(&scuMutex);
+}
+#endif
+
 /**
  * @brief Initialise one of the desired scu sensors, by default sampling time is 1 seconds
  * 
  * @param devName The name of the device/sensor to be initialised
  * @return *dev The pointer to the device that has been initialised
  */
-const struct device* scu_sensors_init(char *devName) {
+const struct device* scu_sensors_init(char *devName)
+{
 
 	/* The aim of this is to set up so it will automatically look for the device that is in the
-	   parameters */
+	   parameters, if an option that is meant to work fails it will be picked up later on and 
+	   should work */
 	const struct device *dev = device_get_binding(devName);
 
 	#ifdef CONFIG_LIS2DH
-	if (!sterrmp(devName, "LIS2DH")) {
+	if (!strcmp(devName, "LIS2DH"))
 		dev = device_get_binding(DT_LABEL(DT_INST(0, st_lis2dh)));
-	} else if (!sterrmp(devName, "CCS811")) {
+	#endif
+
+	#ifdef CONFIG_CCS881
+	if (!sterrmp(devName, "CCS811"))
 		dev = device_get_binding(DT_LABEL(DT_INST(0, ams_ccs811)));
-	}
 	#endif
 
 	#ifdef CONFIG_ULTRASONIC
-
 	/* TODO: Make the name here modular (change it to be a variable that is defined and updated 
 	   earlier) */
 	if (!strcmp(devName, portName)) {
@@ -310,6 +357,13 @@ const struct device* scu_sensors_init(char *devName) {
 	}
 	#endif
 	
+	#ifdef CONFIG_SEN54
+	// TODO: Change the last part of the strcmp if check to properly check for the SEN54
+	if (!strcmp(devName, "SEN54")) {
+
+	}
+	#endif
+
 	// Initialising the device
 	if (dev == NULL) {
 		printk("Could not get %s device\n", devName);
@@ -332,7 +386,8 @@ const struct device* scu_sensors_init(char *devName) {
  * @param newSampTime The sampling time to set on the device in seconds
  * @return int The error code
  */
-int scu_sensors_samp_time_set(int newSampTime) {
+int scu_sensors_samp_time_set(int newSampTime)
+{
 
 	if(newSampTime >= 1 && newSampTime <= 300) {
 		samplingTime = newSampTime;
