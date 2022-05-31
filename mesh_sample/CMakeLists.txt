@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
-set(BOARD thingy52_nrf52832)
-
 
 cmake_minimum_required(VERSION 3.20.0)
 set(QEMU_EXTRA_FLAGS -s)
 
+
+set(BOARD thingy52_nrf52832)
+set(CONF_FILE conf_file.conf)
 
 if((BOARD STREQUAL nrf51_blenano) OR (BOARD STREQUAL nrf51_ble400))
   set(CONF_FILE nrf51_qfaa.conf)

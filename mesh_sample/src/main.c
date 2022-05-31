@@ -423,20 +423,19 @@ void main(void)
 		return;
 	}
 
-	
 	k_work_init_delayable(&onoff.work, onoff_timeout);
+
+	/* Initialize the Bluetooth Subsystem */
+
+	printk("BEFORE ENABLE\n");
+
+
+	//settings_load();
 
 	err = bt_enable(bt_ready);
 	if (err) {
 		printk("Bluetooth init failed (err %d)\n", err);
 	}
-	
 
-	printk("Bluetooth init succeeded\n");
-	
-
-	/*while (1) {
-		printk("HERE\n");
-		k_sleep(K_MSEC(1000));
-	}*/
+	printk("AFTER ENABLE\n");
 }
