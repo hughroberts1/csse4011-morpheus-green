@@ -54,4 +54,7 @@ config ULTRASONIC
 config SPEAKER
 	bool "Specifies if the board has a speaker"
 	default n
+config SEN54
+	bool "Specifies if the board is connected to the SEN54 sensor hub"
+	default n
 source "Kconfig.zephyr"

@@ -22,5 +22,9 @@ target_sources(app PRIVATE
 			../../oslib/scu_drivers/scu_ble/scu_ble.c
             		../../oslib/scu_drivers/scu_power_management/scu_power_management.c
             		../../oslib/scu_drivers/scu_sensors/scu_sensors.c
+            		../../oslib/scu_drivers/scu_sensors/sen5x_i2c.c
+            		../../oslib/scu_drivers/scu_sensors/sensirion_common.c
+            		../../oslib/scu_drivers/scu_sensors/sensirion_i2c.c
+            		../../oslib/scu_drivers/scu_sensors/sensirion_i2c_hal.c
 	    		../../oslib/scu_drivers/scu_io/scu_io.c
 			)
