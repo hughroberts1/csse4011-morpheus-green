@@ -8,7 +8,12 @@
 
 #include <bluetooth/mesh.h>
 #include <drivers/gpio.h>
+
 #include "board.h"
+#include "mesh.h"
+
+static bool pressed;
+static const struct device *gpio;
 
 /* Locate led0 as alias or label by that name */
 #if DT_NODE_EXISTS(DT_ALIAS(led0))
@@ -46,12 +51,34 @@ static const struct device *led_dev = DEVICE_DT_GET(LED0_DEV);
 #define BUTTON0_FLAGS DT_PHA(BUTTON0, gpios, flags)
 
 static const struct device *button_dev = DEVICE_DT_GET(BUTTON0_DEV);
-static struct k_work *button_work;
 
-static void button_cb(const struct device *port, struct gpio_callback *cb,
+
+static bool button_is_pressed(void)
+{
+	return gpio_pin_get(gpio, DT_GPIO_PIN(DT_ALIAS(sw0), gpios)) > 0;
+}
+
+static void button_interrupt(const struct device *port, struct gpio_callback *cb,
 		      gpio_port_pins_t pins)
 {
-	k_work_submit(button_work);
+	set_led_state(pressed);
+	
+	if (button_is_pressed() == pressed) {
+		return;
+	}
+
+	pressed = !pressed;
+	printk("Button %s\n", pressed ? "pressed" : "released");
+
+	
+	if (!mesh_is_initialized()) {
+		return;
+	}
+
+	mesh_send_hello();
+
+	
+	
 }
 #endif /* BUTTON0 */
 
@@ -76,29 +103,27 @@ static int led_init(void)
 	return 0;
 }
 
-static int button_init(struct k_work *button_pressed)
+static int button_init(void)
 {
 #if DT_NODE_EXISTS(BUTTON0)
-	int err;
+	static struct gpio_callback button_cb;
 
-	err = gpio_pin_configure(button_dev, BUTTON0_PIN,
-				 BUTTON0_FLAGS | GPIO_INPUT);
-	if (err) {
-		return err;
+	gpio = device_get_binding(DT_GPIO_LABEL(DT_ALIAS(sw0), gpios));
+	if (!gpio) {
+		return -ENODEV;
 	}
+	gpio_pin_configure(gpio, BUTTON0_PIN, 
+		GPIO_INPUT | BUTTON0_FLAGS);
 
-	static struct gpio_callback gpio_cb;
+	gpio_pin_interrupt_configure(gpio, BUTTON0_PIN, 
+		GPIO_INT_EDGE_BOTH);
 
-	err = gpio_pin_interrupt_configure(button_dev, BUTTON0_PIN,
-					   GPIO_INT_EDGE_TO_ACTIVE);
-	if (err) {
-		return err;
-	}
+	gpio_init_callback(&button_cb, button_interrupt, 
+		BIT(BUTTON0_PIN));
 
-	button_work = button_pressed;
+	gpio_add_callback(gpio, &button_cb);
 
-	gpio_init_callback(&gpio_cb, button_cb, BIT(BUTTON0_PIN));
-	gpio_add_callback(button_dev, &gpio_cb);
+	return 0;
 #else
 	printk("WARNING: Buttons not supported on this board.\n");
 #endif
@@ -106,7 +131,7 @@ static int button_init(struct k_work *button_pressed)
 	return 0;
 }
 
-int board_init(struct k_work *button_pressed)
+int board_init(void)
 {
 	int err;
 
@@ -115,13 +140,20 @@ int board_init(struct k_work *button_pressed)
 		return err;
 	}
 
-	return button_init(button_pressed);
+	set_led_state(true);
+
+	err = button_init(); 
+    if (err) {
+        return err;
+    }
+
+	return 0;
 }
 
-int board_led_set(bool val)
+int set_led_state(bool state)
 {
 #if DT_NODE_EXISTS(LED0)
-	return gpio_pin_set(led_dev, LED0_PIN, val);
+	return gpio_pin_set(led_dev, LED0_PIN, state);
 #endif
 }
 
