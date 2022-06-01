@@ -270,42 +270,46 @@ void echo_recieved_callback(const struct device *dev)
 
 #ifdef CONFIG_SEN54
 /**
- * @brief Function used to poll all data sources from the SEN54 and print to console
- * TODO: Clean up this function if need be
+ * @brief Function used to poll all data sources from the SEN54, store in the global sensor data
+ * 	  struct and print to console
  */
-void scu_process_sen54_sample(void)
+void thread_scu_sen54_poll(void)
 {
 	scu_sensors_init("SEN54");
 	int err = sen5x_start_measurement();
     	if (err)
         	printk("Error executing sen5x_start_measurement(): %i\n", err);
 
-	if (k_mutex_lock(&scuMutex, K_FOREVER) != 0) {
-        	printk("The mutex could not lock\n");
-		return;
-    	}
-// TODO: Put this for loop in a thread for continuous polling?
-while (1) {
-	k_sleep(K_SECONDS(samplingTime));
-	uint16_t vals[8] = {0,0,0,0,0,0,0,0};
-	err = sen5x_read_measured_values(&vals[0], &vals[1], &vals[2], &vals[3], &vals[4], &vals[5],
-					 &vals[6], &vals[7]);
-	// Adjust scaling of data
-	currentSensorData.particle[0] = vals[0] / 10.0f;
-	currentSensorData.particle[1] = vals[1] / 10.0f;
-	currentSensorData.particle[2] = vals[2] / 10.0f;
-	currentSensorData.particle[3] = vals[3] / 10.0f;
-	currentSensorData.humidity = vals[4] / 100.0f;
-	currentSensorData.temperature = vals[5] / 200.0f;
-	currentSensorData.voc = vals[6] / 10.0f;
-	printk("Temp:%.2f Hum:%.2f VOC:%.2f Particle:%.2f \n", currentSensorData.temperature,
-		currentSensorData.humidity, currentSensorData.voc, currentSensorData.particle[3]);
-}
+	
+	// TODO: Put this for loop in a thread for continuous polling?
+	while (1) {
+		k_sleep(K_SECONDS(samplingTime));
+		if (k_mutex_lock(&scuMutex, K_FOREVER) != 0) {
+			printk("The mutex could not lock\n");
+			return;
+		}
+		uint16_t vals[8] = {0,0,0,0,0,0,0,0};
+		err = sen5x_read_measured_values(&vals[0], &vals[1], &vals[2], &vals[3], &vals[4],
+						 &vals[5], &vals[6], &vals[7]);
+		// Adjust scaling of data
+		currentSensorData.particle[0] = vals[0] / 10.0f;
+		currentSensorData.particle[1] = vals[1] / 10.0f;
+		currentSensorData.particle[2] = vals[2] / 10.0f;
+		currentSensorData.particle[3] = vals[3] / 10.0f;
+		currentSensorData.humidity = vals[4] / 100.0f;
+		currentSensorData.temperature = vals[5] / 200.0f;
+		currentSensorData.voc = vals[6] / 10.0f;
+
+		k_mutex_unlock(&scuMutex);
+
+		printk("Temp:%.2f Hum:%.2f VOC:%.2f Particle:%.2f \n",
+		       currentSensorData.temperature, currentSensorData.humidity,
+		       currentSensorData.voc, currentSensorData.particle[3]);
+	}
 	err = sen5x_stop_measurement();
-	sensirion_i2c_hal_free();
 	if (err)
         	printk("Error executing sen5x_stop_measurement(): %i\n", err);
-	k_mutex_unlock(&scuMutex);
+	sensirion_i2c_hal_free();
 }
 #endif
 

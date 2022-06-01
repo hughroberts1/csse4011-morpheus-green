@@ -11,10 +11,6 @@
 #include "sen5x_i2c.h"
 #include "sensirion_common.h"
 #include "sensirion_i2c_hal.h"
-void main(void)
-{
-        while(1) {
-                scu_process_sen54_sample();
-                //k_sleep(K_SECONDS(1));
-        }
-}
+
+K_THREAD_DEFINE(scu_sen54_thread_tid, THREAD_SCU_SEN54_POLL_STACK, thread_scu_sen54_poll,
+		NULL, NULL, NULL, THREAD_SCU_SEN54_POLL_PRIORITY, 0, 0);

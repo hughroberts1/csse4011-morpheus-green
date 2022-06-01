@@ -30,6 +30,12 @@
 #define TRIG_PIN 2
 #define ECHO_PIN 1
 
+/* Thread Stack Sizes */
+#define THREAD_SCU_SEN54_POLL_STACK 2048
+
+/* Thread Priorities */
+#define THREAD_SCU_SEN54_POLL_PRIORITY 3
+
 struct scuSensorData {
 	float temperature;
 	float humidity;
@@ -43,9 +49,10 @@ struct scuSensorData {
 	int16_t distance;
 };
 
-/* Thread safety variables */
+/* Thread variables */
 extern struct k_mutex scuMutex;
 extern struct k_sem usSem;
+extern const k_tid_t scu_sen54_thread_tid; 
 
 /* Program variables */
 extern struct scuSensorData currentSensorData;
@@ -59,5 +66,7 @@ void scu_process_hts221_sample(void);
 void scu_process_lis2dh_sample(void);
 void scu_process_ccs811_sample(void);
 void scu_process_ultrasonic_sample(void);
-void scu_process_sen54_sample(void);
+
+/* Thread function prototypes */
+void thread_scu_sen54_poll(void);
 #endif
