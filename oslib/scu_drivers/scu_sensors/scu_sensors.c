@@ -270,31 +270,13 @@ void echo_recieved_callback(const struct device *dev)
 
 #ifdef CONFIG_SEN54
 /**
- * @brief Function used to take a sample of all data sources from the SEN54 and print to console
+ * @brief Function used to poll all data sources from the SEN54 and print to console
  * TODO: Clean up this function if need be
  */
 void scu_process_sen54_sample(void)
 {
-	//TODO: Might not need to get device because its done in the drivers
 	scu_sensors_init("SEN54");
-
-	float temp_offset = 0.0f;
-	int16_t default_slope = 0;
-	uint16_t default_time_constant = 0;
-	printk("Line: 2\n");
-	int err = sen5x_set_temperature_offset_parameters(
-		(int16_t)(200 * temp_offset), default_slope, default_time_constant);
-	if (err) {
-		printk(
-		"Error executing sen5x_set_temperature_offset_parameters(): %i\n",
-		err);
-	} else {
-		printk("Temperature Offset set to %.2f °C (SEN54/SEN55 only)\n",
-		temp_offset);
-	}
-	printk("Line: 295\n");
-	err = sen5x_start_measurement();
-	printk("Line: 297\n");
+	int err = sen5x_start_measurement();
     	if (err)
         	printk("Error executing sen5x_start_measurement(): %i\n", err);
 
@@ -302,31 +284,23 @@ void scu_process_sen54_sample(void)
         	printk("The mutex could not lock\n");
 		return;
     	}
-
-	sensirion_i2c_hal_sleep_usec(1000000);
-	int temp[8] = {0,0,0,0,0,0,0,0};
-	err = sen5x_read_measured_values(&temp[0], &temp[1], &temp[2], &temp[3], &temp[4], &temp[5], &temp[6], &temp[7]);
-	/*
-	err = sen5x_read_measured_values(&currentSensorData.particle[0],
-					 &currentSensorData.particle[1],
-					 &currentSensorData.particle[2],
-					 &currentSensorData.particle[3],
-            				 &currentSensorData.humidity,
-					 &currentSensorData.temperature,
-					 &currentSensorData.voc, &currentSensorData.nox);*/
-	printk("Pretemp: %lf\n",temp[5]);
-
+// TODO: Put this for loop in a thread for continuous polling?
+while (1) {
+	k_sleep(K_SECONDS(samplingTime));
+	uint16_t vals[8] = {0,0,0,0,0,0,0,0};
+	err = sen5x_read_measured_values(&vals[0], &vals[1], &vals[2], &vals[3], &vals[4], &vals[5],
+					 &vals[6], &vals[7]);
 	// Adjust scaling of data
-	currentSensorData.particle[0] = temp[0] / 10.0f;
-	currentSensorData.particle[1] = temp[1] / 10.0f;
-	currentSensorData.particle[2] = temp[2] / 10.0f;
-	currentSensorData.particle[3] = temp[3] / 10.0f;
-	currentSensorData.humidity = temp[4] / 100.0f;
-	currentSensorData.temperature = temp[5] / 200.0f;
-	currentSensorData.voc = temp[6] / 10.0f;
-	printk("Temp:%.1f Hum:%.1f VOC:%.1f Particle:%.1f \n", currentSensorData.temperature,
+	currentSensorData.particle[0] = vals[0] / 10.0f;
+	currentSensorData.particle[1] = vals[1] / 10.0f;
+	currentSensorData.particle[2] = vals[2] / 10.0f;
+	currentSensorData.particle[3] = vals[3] / 10.0f;
+	currentSensorData.humidity = vals[4] / 100.0f;
+	currentSensorData.temperature = vals[5] / 200.0f;
+	currentSensorData.voc = vals[6] / 10.0f;
+	printk("Temp:%.2f Hum:%.2f VOC:%.2f Particle:%.2f \n", currentSensorData.temperature,
 		currentSensorData.humidity, currentSensorData.voc, currentSensorData.particle[3]);
-
+}
 	err = sen5x_stop_measurement();
 	sensirion_i2c_hal_free();
 	if (err)

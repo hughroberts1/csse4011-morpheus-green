@@ -15,6 +15,6 @@ void main(void)
 {
         while(1) {
                 scu_process_sen54_sample();
-                k_sleep(K_SECONDS(1));
+                //k_sleep(K_SECONDS(1));
         }
 }

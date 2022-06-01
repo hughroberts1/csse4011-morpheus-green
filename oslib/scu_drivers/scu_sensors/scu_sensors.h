@@ -18,7 +18,7 @@
 #include <drivers/sensor/ccs811.h>
 
 // Other Defines
-#define SAMPLING_TIME_DEFAULT 1
+#define SAMPLING_TIME_DEFAULT 60
 
 // Hash defines for the ultrasonic sensor
 #define TRIG_PULSE_US 11

@@ -72,6 +72,9 @@ int16_t sensirion_i2c_hal_select_bus(uint8_t bus_idx) {
  */
 void sensirion_i2c_hal_init(void) {
     i2c_dev = device_get_binding(DT_LABEL(I2C_0));
+    int err = i2c_configure(i2c_dev, I2C_MODE_MASTER | I2C_SPEED_SET(I2C_SPEED_STANDARD));
+    if (err)
+        printk("Could not configure I2C device has error code: %d\n", err);
 }
 
 /**
