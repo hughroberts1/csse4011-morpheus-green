@@ -38,6 +38,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#define I2C_0 DT_NODELABEL(i2c0)
+
 /**
  * Select the current i2c bus by index.
  * All following i2c operations will be directed at that bus.

@@ -37,7 +37,9 @@ struct scuSensorData {
 	// In order x, y, z
 	float acceleration[3];
 	float voc;
-	float particle;
+	float co2;
+	float nox;
+	float particle[4];
 	int16_t distance;
 };
 
@@ -57,5 +59,5 @@ void scu_process_hts221_sample(void);
 void scu_process_lis2dh_sample(void);
 void scu_process_ccs811_sample(void);
 void scu_process_ultrasonic_sample(void);
-
+void scu_process_sen54_sample(void);
 #endif

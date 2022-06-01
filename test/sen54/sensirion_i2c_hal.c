@@ -31,7 +31,6 @@
 
 #include <device.h>
 #include <drivers/i2c.h>
-#include <devicetree.h>
 #include <zephyr.h>
 
 #include "sensirion_common.h"
@@ -53,6 +52,7 @@ int16_t sensirion_i2c_hal_select_bus(uint8_t bus_idx) {
 
     if (bus_idx > 9) {
         /* Invalid bus index */
+        // TODO: Check this error code
         return ENXIO;
     }
 
@@ -71,7 +71,8 @@ int16_t sensirion_i2c_hal_select_bus(uint8_t bus_idx) {
  * communication.
  */
 void sensirion_i2c_hal_init(void) {
-    i2c_dev = device_get_binding(DT_LABEL(I2C_0));
+    /* Device (specified by sps30_i2c_dev) is already initialized by the Zephyr
+     * boot-up process. Nothing to be done here. */
 }
 
 /**

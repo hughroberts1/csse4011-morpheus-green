@@ -3,7 +3,7 @@
  * @file scu_sensors.c
  * @author Oliver Roman
  * @date 31.03.2022
- * @brief Contains driving and threading functionality for the sensors that the
+ * @brief tempains driving and threading functionality for the sensors that the
  * 	  SCU or Argon board might use
  ******************************************************************************
  **/
@@ -21,9 +21,12 @@
 // Local Library Include
 #include "scu_sensors.h"
 #include "scu_ble.h"
+
+#ifdef CONFIG_SEN54
 #include "sen5x_i2c.h"
 #include "sensirion_common.h"
 #include "sensirion_i2c_hal.h"
+#endif
 
 // Name of the port used for the ultrasonic TODO: see how to change this with devicetree
 // Can change here now for modularity purposes
@@ -33,7 +36,7 @@ K_SEM_DEFINE(usSem, 0, 1);
 K_MUTEX_DEFINE(scuMutex);
 
 // Zeroing the struct that will hold the current sensor data
-struct scuSensorData currentSensorData = {0,0,0,{0,0,0},0,0};
+struct scuSensorData currentSensorData = {0,0,0,{0,0,0},0,0,0,{0,0,0,0},0};
 
 // Setting up the ultrasonic callback data struct
 static struct gpio_callback usCbData;
@@ -84,7 +87,6 @@ void scu_process_lps22hb_sample(void)
  */
 void scu_process_hts221_sample(void)
 {
-	
 	const struct device *dev = scu_sensors_init("HTS221");
 	struct sensor_value temp, hum;
 
@@ -124,7 +126,6 @@ void scu_process_hts221_sample(void)
  */
 void scu_process_lis2dh_sample(void)
 {
-	
 	const struct device *dev = scu_sensors_init("LIS2DH");
 	struct sensor_value accel[3];
 	int err = sensor_sample_fetch(dev);
@@ -160,7 +161,6 @@ void scu_process_lis2dh_sample(void)
  */
 void scu_process_ccs811_sample(void)
 {
-	
 	const struct device *dev = scu_sensors_init("CCS811");
 	struct sensor_value tvoc, co2;
 	int err = 0;
@@ -197,7 +197,6 @@ void scu_process_ccs811_sample(void)
  */
 void scu_process_ultrasonic_sample(void)
 {
-
 	const struct device *dev = scu_sensors_init(portName);
 
     	if (k_mutex_lock(&scuMutex, K_FOREVER) != 0) {
@@ -249,14 +248,13 @@ void scu_process_ultrasonic_sample(void)
 }
 
 /**
- * @brief Callback funciton for the interrupt connected to the ultrasonic sensor, times difference
+ * @brief Callback function for the interrupt connected to the ultrasonic sensor, times difference
  * 	  between the echo pin start and finish
  * 
  * @param dev The device handle for the ultrasonic sensor
  */
 void echo_recieved_callback(const struct device *dev)
 {
-
 // Removed "struct gpio_callback *cb" if the code breaks it could be why
 	if (gpio_pin_get(dev, ECHO_PIN)) {
 		// Start timing how long it takes for the echo to end
@@ -272,35 +270,67 @@ void echo_recieved_callback(const struct device *dev)
 
 #ifdef CONFIG_SEN54
 /**
- * @brief Function used to take a sample of all data sources from the SEN54
- * 
+ * @brief Function used to take a sample of all data sources from the SEN54 and print to console
+ * TODO: Clean up this function if need be
  */
 void scu_process_sen54_sample(void)
 {
-	int err = sen5x_start_measurement();
-    	if (err)
-        	printf("Error executing sen5x_start_measurement(): %i\n", error);
+	//TODO: Might not need to get device because its done in the drivers
+	scu_sensors_init("SEN54");
 
-	const struct device *dev = scu_sensors_init("I2C_0");
-	
+	float temp_offset = 0.0f;
+	int16_t default_slope = 0;
+	uint16_t default_time_constant = 0;
+	printk("Line: 2\n");
+	int err = sen5x_set_temperature_offset_parameters(
+		(int16_t)(200 * temp_offset), default_slope, default_time_constant);
+	if (err) {
+		printk(
+		"Error executing sen5x_set_temperature_offset_parameters(): %i\n",
+		err);
+	} else {
+		printk("Temperature Offset set to %.2f °C (SEN54/SEN55 only)\n",
+		temp_offset);
+	}
+	printk("Line: 295\n");
+	err = sen5x_start_measurement();
+	printk("Line: 297\n");
+    	if (err)
+        	printk("Error executing sen5x_start_measurement(): %i\n", err);
+
 	if (k_mutex_lock(&scuMutex, K_FOREVER) != 0) {
         	printk("The mutex could not lock\n");
 		return;
     	}
 
-	// TODO: check if its &struct.data or &struct->data to be passed in here (make sure to pass
-	//	 by reference)
-	err = sen5x_read_measured_values(NULL, NULL, NULL, &currentSensorData->particle,
-            				 &currentSensorData->hum, &currentSensorData->temp,
-					 &currentSensorData->voc, NULL);
+	sensirion_i2c_hal_sleep_usec(1000000);
+	int temp[8] = {0,0,0,0,0,0,0,0};
+	err = sen5x_read_measured_values(&temp[0], &temp[1], &temp[2], &temp[3], &temp[4], &temp[5], &temp[6], &temp[7]);
+	/*
+	err = sen5x_read_measured_values(&currentSensorData.particle[0],
+					 &currentSensorData.particle[1],
+					 &currentSensorData.particle[2],
+					 &currentSensorData.particle[3],
+            				 &currentSensorData.humidity,
+					 &currentSensorData.temperature,
+					 &currentSensorData.voc, &currentSensorData.nox);*/
+	printk("Pretemp: %lf\n",temp[5]);
+
 	// Adjust scaling of data
-	currentSensorData.particle /= 10;
-	currentSensorData.hum /= 100;
-	currentSensorData.temp /= 200;
-	currentSensorData.voc /= 10;
-	int err = sen5x_stop_measurement();
+	currentSensorData.particle[0] = temp[0] / 10.0f;
+	currentSensorData.particle[1] = temp[1] / 10.0f;
+	currentSensorData.particle[2] = temp[2] / 10.0f;
+	currentSensorData.particle[3] = temp[3] / 10.0f;
+	currentSensorData.humidity = temp[4] / 100.0f;
+	currentSensorData.temperature = temp[5] / 200.0f;
+	currentSensorData.voc = temp[6] / 10.0f;
+	printk("Temp:%.1f Hum:%.1f VOC:%.1f Particle:%.1f \n", currentSensorData.temperature,
+		currentSensorData.humidity, currentSensorData.voc, currentSensorData.particle[3]);
+
+	err = sen5x_stop_measurement();
+	sensirion_i2c_hal_free();
 	if (err)
-        	printf("Error executing sen5x_stop_measurement(): %i\n", error);
+        	printk("Error executing sen5x_stop_measurement(): %i\n", err);
 	k_mutex_unlock(&scuMutex);
 }
 #endif
@@ -313,7 +343,6 @@ void scu_process_sen54_sample(void)
  */
 const struct device* scu_sensors_init(char *devName)
 {
-
 	/* The aim of this is to set up so it will automatically look for the device that is in the
 	   parameters, if an option that is meant to work fails it will be picked up later on and 
 	   should work */
@@ -325,7 +354,7 @@ const struct device* scu_sensors_init(char *devName)
 	#endif
 
 	#ifdef CONFIG_CCS881
-	if (!sterrmp(devName, "CCS811"))
+	if (!strcmp(devName, "CCS811"))
 		dev = device_get_binding(DT_LABEL(DT_INST(0, ams_ccs811)));
 	#endif
 
@@ -333,7 +362,7 @@ const struct device* scu_sensors_init(char *devName)
 	/* TODO: Make the name here modular (change it to be a variable that is defined and updated 
 	   earlier) */
 	if (!strcmp(devName, portName)) {
-		dev = device_get_binding(portName); 
+		dev = device_get_binding(devName); 
 	
 		if (gpio_pin_configure(dev, TRIG_PIN, GPIO_OUTPUT) != 0) {
 			printk("Error failed to configure trigger pin\n");
@@ -356,12 +385,12 @@ const struct device* scu_sensors_init(char *devName)
 		printk("Set up ultrasonic sensor callback on echo pin\n");
 	}
 	#endif
-	
-	#ifdef CONFIG_SEN54
-	// TODO: Change the last part of the strcmp if check to properly check for the SEN54
-	if (!strcmp(devName, "SEN54")) {
 
-	}
+	#ifdef CONFIG_SEN54
+	if (!strcmp(devName, "SEN54"))
+		// Custom implementation done by drivers (stores its own internal handle to the dev)
+		sensirion_i2c_hal_init();
+		return;
 	#endif
 
 	// Initialising the device
@@ -388,7 +417,6 @@ const struct device* scu_sensors_init(char *devName)
  */
 int scu_sensors_samp_time_set(int newSampTime)
 {
-
 	if(newSampTime >= 1 && newSampTime <= 300) {
 		samplingTime = newSampTime;
 		return 0;
