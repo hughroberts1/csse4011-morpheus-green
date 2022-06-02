@@ -1,4 +1,20 @@
 /*
+ * Copyright (c) 2016 Intel Corporation
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr.h>
+#include <device.h>
+#include <devicetree.h>
+#include <drivers/gpio.h>
+#include <usb/usb_device.h>
+#include <drivers/uart.h>
+
+#include <bluetooth/bluetooth.h>
+#include <bluetooth/hci.h>
+
+/*
  * Copyright (c) 2019 Tobias Svehagen
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -301,13 +317,29 @@ void main(void)
 
 	printk("Initializing...\n");
 
+	/* Setup DTR */
+	const struct device *console_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
+	uint32_t dtr = 0;	
+
+	if (usb_enable(NULL))
+		return;
+
+	/* Wait on DTR - 'Data Terminal Ready'
+	 * Will wait here until a terminal has been attached to the device
+	 * This is not necessary, however, can be useful from reading early data
+	 */
+	while (!dtr) {
+		uart_line_ctrl_get(console_dev, UART_LINE_CTRL_DTR, &dtr);
+		k_sleep(K_MSEC(100));
+	}
+
+
 	/* Initialize the Bluetooth Subsystem */
 	err = bt_enable(NULL);
 	if (err) {
 		printk("Bluetooth init failed (err %d)\n", err);
 		return;
 	}
-	
 
 	printk("Bluetooth initialized\n");
 	bt_ready();

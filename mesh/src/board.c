@@ -118,10 +118,10 @@ int board_init(struct k_work *button_pressed)
 	return button_init(button_pressed);
 }
 
-int board_led_set(bool val)
+void board_led_set(bool val)
 {
 #if DT_NODE_EXISTS(LED0)
-	return gpio_pin_set(led_dev, LED0_PIN, val);
+	gpio_pin_set(led_dev, LED0_PIN, val);
 #endif
 }
 

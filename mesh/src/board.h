@@ -12,4 +12,4 @@ void board_prov_complete(void);
 
 int board_init(struct k_work *button_work);
 
-int board_led_set(bool val);
+void board_led_set(bool val);
