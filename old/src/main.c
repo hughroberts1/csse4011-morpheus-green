@@ -334,6 +334,127 @@ static const struct bt_mesh_model_op gen_onoff_cli_op[] = {
 	BT_MESH_MODEL_OP_END,
 };
 
+static int sensor_desc_get(struct bt_mesh_model *model,
+			   struct bt_mesh_msg_ctx *ctx,
+			   struct net_buf_simple *buf)
+{
+	/* TODO */
+	return 0;
+}
+
+static void sens_temperature_celsius_fill(struct net_buf_simple *msg)
+{
+	struct sensor_hdr_a hdr;
+	/* TODO Get only temperature from sensor */
+	//struct sensor_value val[2];
+	int16_t temp_degrees = 19; 
+
+	hdr.format = SENSOR_HDR_A;
+	hdr.length = sizeof(temp_degrees);
+	hdr.prop_id = SENS_PROP_ID_PRESENT_DEVICE_TEMP;
+
+	//get_hdc1010_val(val);
+	//temp_degrees = sensor_value_to_double(&val[0]) * 100;
+
+	net_buf_simple_add_mem(msg, &hdr, sizeof(hdr));
+	net_buf_simple_add_le16(msg, temp_degrees);
+}
+
+static void sens_unknown_fill(uint16_t id, struct net_buf_simple *msg)
+{
+	struct sensor_hdr_b hdr;
+
+	/*
+	 * When the message is a response to a Sensor Get message that
+	 * identifies a sensor property that does not exist on the element, the
+	 * Length field shall represent the value of zero and the Raw Value for
+	 * that property shall be omitted. (Mesh model spec 1.0, 4.2.14).
+	 *
+	 * The length zero is represented using the format B and the special
+	 * value 0x7F.
+	 */
+	hdr.format = SENSOR_HDR_B;
+	hdr.length = 0x7FU;
+	hdr.prop_id = id;
+
+	net_buf_simple_add_mem(msg, &hdr, sizeof(hdr));
+}
+
+static void sensor_create_status(uint16_t id, struct net_buf_simple *msg)
+{
+	bt_mesh_model_msg_init(msg, BT_MESH_MODEL_OP_SENS_STATUS);
+
+	switch (id) {
+	case SENS_PROP_ID_PRESENT_DEVICE_TEMP:
+		sens_temperature_celsius_fill(msg);
+		break;
+	default:
+		sens_unknown_fill(id, msg);
+		break;
+	}
+}
+
+static int sensor_get(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *ctx,
+		      struct net_buf_simple *buf)
+{
+	NET_BUF_SIMPLE_DEFINE(msg, 1 + MAX_SENS_STATUS_LEN + 4);
+	uint16_t sensor_id;
+
+	sensor_id = net_buf_simple_pull_le16(buf);
+	sensor_create_status(sensor_id, &msg);
+
+	if (bt_mesh_model_send(model, ctx, &msg, NULL, NULL)) {
+		printk("Unable to send Sensor get status response\n");
+	}
+
+	return 0;
+}
+
+static int sensor_col_get(struct bt_mesh_model *model,
+			  struct bt_mesh_msg_ctx *ctx,
+			  struct net_buf_simple *buf)
+{
+	/* TODO */
+	return 0;
+}
+
+static int sensor_series_get(struct bt_mesh_model *model,
+			     struct bt_mesh_msg_ctx *ctx,
+			     struct net_buf_simple *buf)
+{
+	/* TODO */
+	return 0;
+}
+
+/* Mapping of message handlers for Sensor Server (0x1100) */
+static const struct bt_mesh_model_op sensor_srv_op[] = {
+	{ BT_MESH_MODEL_OP_SENS_DESC_GET,   BT_MESH_LEN_EXACT(0), sensor_desc_get },
+	{ BT_MESH_MODEL_OP_SENS_GET,        BT_MESH_LEN_EXACT(2), sensor_get },
+	{ BT_MESH_MODEL_OP_SENS_COL_GET,    BT_MESH_LEN_EXACT(2), sensor_col_get },
+	{ BT_MESH_MODEL_OP_SENS_SERIES_GET, BT_MESH_LEN_EXACT(2), sensor_series_get },
+};
+
+
+static int sensor_status(struct bt_mesh_model *model,
+			    struct bt_mesh_msg_ctx *ctx,
+			    struct net_buf_simple *buf)
+{
+
+	printk("sensor status\n");
+	uint8_t data1 = net_buf_simple_pull_u8(buf);
+	uint8_t data2 = net_buf_simple_pull_u8(buf);
+
+	printk("Data: %d, %d\n", data1, data2);
+
+	return 0;
+}
+
+
+static const struct bt_mesh_model_op sensor_cli_op[] = {
+	{BT_MESH_MODEL_OP_SENS_STATUS, BT_MESH_LEN_EXACT(2), sensor_status},
+	BT_MESH_MODEL_OP_END,
+};
+
 
 /* This application only needs one element to contain its models */
 static struct bt_mesh_model models[] = {
@@ -346,6 +467,10 @@ static struct bt_mesh_model models[] = {
 	BT_MESH_MODEL(BT_MESH_MODEL_ID_GEN_ONOFF_CLI, gen_onoff_cli_op, NULL,
 		      NULL),
 
+
+	BT_MESH_MODEL(BT_MESH_MODEL_ID_SENSOR_SRV, sensor_srv_op, NULL, NULL),
+
+	BT_MESH_MODEL(BT_MESH_MODEL_ID_SENSOR_CLI, sensor_cli_op, NULL, NULL),
 
 };
 
@@ -417,6 +542,32 @@ static int gen_onoff_send(bool val)
 	return bt_mesh_model_send(&models[3], &ctx, &buf, NULL, NULL);
 }
 
+static int sensor_status_send(uint16_t data)
+{
+
+	printk("Sensor status send\n");
+
+	struct bt_mesh_msg_ctx ctx = {
+		.app_idx = models[4].keys[0],
+		.addr = BT_MESH_ADDR_ALL_NODES,
+		.send_ttl = BT_MESH_TTL_DEFAULT,
+	};
+
+	if (ctx.app_idx == BT_MESH_KEY_UNUSED) {
+		printk("The Sensor Server must be bound to a key before sending\n");
+		return -ENOENT;
+	}
+
+
+	BT_MESH_MODEL_BUF_DEFINE(buf, BT_MESH_MODEL_OP_SENS_STATUS, 2);
+	bt_mesh_model_msg_init(&buf, BT_MESH_MODEL_OP_SENS_STATUS);
+	net_buf_simple_add_u8(&buf, (data >> 8) & 0xFF);
+	net_buf_simple_add_u8(&buf, data & 0xFF);
+
+	return bt_mesh_model_send(&models[4], &ctx, &buf, NULL, NULL);
+
+}
+
 /** Send an OnOff Status message from the Generic OnOff Server to all nodes. */
 static int gen_onoff_status_send(void)
 {
@@ -443,11 +594,20 @@ static int gen_onoff_status_send(void)
 }
 
 
+uint16_t dummy = 0; 
+
+
 static void button_pressed(struct k_work *work)
 {
 	if (bt_mesh_is_provisioned()) {
 		//(void)gen_onoff_send(!onoff.val);
-		(void)gen_onoff_status_send();
+		
+		//onoff.val = !onoff.val;
+		//board_led_set(onoff.val);
+		//(void)gen_onoff_status_send();
+		sensor_status_send(dummy++);
+		onoff.val = !onoff.val;
+		board_led_set(onoff.val);
 		return;
 	}
 
@@ -488,7 +648,10 @@ static void button_pressed(struct k_work *work)
 	 * it:
 	 */
 	models[2].keys[0] = 0;
-	models[3].keys[0] = 0;	
+	models[3].keys[0] = 0;
+
+	models[4].keys[0] = 0; 
+	models[5].keys[0] = 0; 	
 
 	printk("Provisioned and configured!\n");
 }
