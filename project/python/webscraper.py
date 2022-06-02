@@ -1,17 +1,88 @@
+####################################################################################################
+# Webscraper made for http://weather.science.uq.edu.au/Archive/ to scrape weather data from the UQ
+# weather station to feed in to the ML algorithm to help predict the event of rain for the following
+# day.
+# 
+# Author: Oliver Roman
+# Date: 01/06/2022
+####################################################################################################
+
 from urllib.request import urlopen
 from bs4 import BeautifulSoup as bs
+import numpy as np
+import csv
 import re
 
-def url_parse(url):
-        uClient = urlopen(url)
+# Opens the url given through params and returns the open page_html file
+def url_parse(link):
+        uClient = urlopen(link)
         page_html = uClient.read()
         uClient.close()
         return page_html
-my_url = 'http://weather.science.uq.edu.au/Archive/'
-homepage_html = url_parse(my_url)
 
+
+# Parses through .txt files that can be accessed by giving a url and returns all the weather data
+# scraped from the .txt file in a list of dictionaries
+def url_txt_parse(link, columns):    
+        weather_data = []
+        file_text = url_parse(link)
+        file_text = file_text.decode()
+        lines = file_text.split('\r\n')
+
+        for line in lines:
+                # Check that the start of the line is valid for error checking
+                if re.search("^\d\d-\d\d-\d\d",line):
+                        data_dict = {} # dictionary to store file data (each line)
+                        data = []
+                        total_data = [item.strip() for item in line.split('\t')]
+                        data.append(total_data[0] + " " + total_data[1]) # concatenate date and time 
+                        data.append(total_data[2])  # temp values
+                        data.append(total_data[5])  # hum values
+                        data.append(total_data[16]) # pressure values
+                        data.append(total_data[17]) # rain amount values
+                        data.append(total_data[18]) # rain rate values
+
+                        for index, elem in enumerate(data):
+                                data_dict[columns[index]] = data[index]
+                        weather_data.append(data_dict) # append dictionary to list
+        return weather_data
+
+
+# Parses through .csv files that can be accessed by giving a url and returns all the weather data
+# scraped from the .csv file in a list of dictionaries
+def url_csv_parse(link, columns):
+        weather_data = []
+        csv_file = urlopen(link)
+        rows = [r.decode('utf-8') for r in csv_file.readlines()]
+        csv_reader = csv.reader(rows)
+
+        i = 1
+        for row in csv_reader:
+                if i == 1:
+                        i += 1
+                else:
+                        data_dict = {} # dictionary to store file data (each row)
+                        data = []
+                        data.append(row[0])  # date and time
+                        data.append(row[6])  # temp values
+                        data.append(row[7])  # hum values
+                        data.append(row[8])  # pressure values
+                        data.append(row[9])  # rain amount values
+                        data.append(row[10]) # rain rate values
+
+                        for index, elem in enumerate(data):
+                                data_dict[columns[index]] = data[index]
+                        weather_data.append(data_dict) # append dictionary to list
+                        i += 1
+        return weather_data
+
+# Webscrape section
+my_url = 'http://weather.science.uq.edu.au/Archive/'
+
+homepage_html = url_parse(my_url)
 homepage_urls = []
 homepage_soup = bs(homepage_html, "html.parser")
+
 for link in homepage_soup.find_all('a'):
         if re.search("^20",link.get('href')):
                 homepage_urls.append(my_url + link.get('href'))
@@ -19,65 +90,59 @@ for link in homepage_soup.find_all('a'):
 subpage_urls = []
 txt_urls = []
 csv_urls = []
-for url in homepage_urls:
-        subpage_html = url_parse(url)
+for link in homepage_urls:
+        subpage_html = url_parse(link)
         subpage_soup = bs(subpage_html, "html.parser")
-        for link in subpage_soup.find_all('a'):
-                if re.search("20\d\d-\d\d\.txt",link.get('href')):
-                        txt_urls.append(url + link.get('href'))
-                elif re.search("[01]\d/$",link.get('href')):
-                        subpage_urls.append(url + link.get('href'))
+        for sublink in subpage_soup.find_all('a'):
+                if re.search("20\d\d-\d\d\.txt",sublink.get('href')):
+                        txt_urls.append(link + sublink.get('href'))
+                elif re.search("[01]\d/$",sublink.get('href')):
+                        subpage_urls.append(link + sublink.get('href'))
+
 # Remove because these are doubles (there are csv and txt files covering these date ranges)
 subpage_urls.remove('http://weather.science.uq.edu.au/Archive/2017/2017_03/')
-subpage_urls.remove('http://weather.science.uq.edu.au/Archive/2017/2017_04/')
-subpage_urls.remove('http://weather.science.uq.edu.au/Archive/2017/2017_05/')
 
-for url in subpage_urls:
-        subsubpage_html = url_parse(url)
+for link in subpage_urls:
+        subsubpage_html = url_parse(link)
         subsubpage_soup = bs(subsubpage_html, "html.parser")
-        for link in subsubpage_soup.find_all('a'):
-                if re.search("\.csv",link.get('href')):
-                        csv_urls.append(url + link.get('href'))
+        for sublink in subsubpage_soup.find_all('a'):
+                if re.search("\.csv",sublink.get('href')):
+                        csv_urls.append(link + sublink.get('href'))
 
 # Remove this abberant scum >:(
-csv_urls.remove('http://weather.science.uq.edu.au/Archive/2019/2019_10/20191002_to_1009_T140258.csv')
+csv_urls.\
+        remove('http://weather.science.uq.edu.au/Archive/2019/2019_10/20191002_to_1009_T140258.csv')
 
-dates = []
-times = []
-max_temp = []
-min_temp = []
-rel_hum = []
-pressure = []
-rain = []
-weather_data_entry = {}
-weather_data = []
+headers = ["Date & time","Temperature","Relative Humidity","Sea Level Pressure","Rain",\
+           "Rain Intensity"]
 
-file = open('test.txt', mode = 'r', encoding = 'utf-8-sig')
-lines = file.readlines()
-file.close()
+condensed_headers = ["Date","Max Temperature", "Min Temperature", "Avg Temperature",\
+                     "Avg Humidity","Avg Pressure","mm of Rain"]
+condensed_data = {}
+#temp_data = url_txt_parse('http://weather.science.uq.edu.au/Archive/2004/2004-03.txt')
+#data_chunk.extend(temp_data)
+#for data in data_chunk:
+#        print(data)
+        
 
-#for line in lines:
-#        line = line.split('\t')
-#        line[:] = [x for x in line if x != '']
+with open("weather_data.csv", "w", newline = '') as weather_file:
+                dict_writer = csv.DictWriter(weather_file, headers)
+                dict_writer.writeheader()
+
+for link in txt_urls:
+        data_chunk = url_txt_parse(link, headers)
+
+        # Write all the data to a csv file called weather data
+        with open("weather_data.csv", "a", newline = '') as weather_file:
+                dict_writer = csv.DictWriter(weather_file, headers)
+                dict_writer.writerows(data_chunk)
 
 
+for link in csv_urls:
+        data_chunk = url_csv_parse(link, headers)
+        # Write all the data to a csv file called weather data
+        with open("weather_data.csv", "a", newline = '') as weather_file:
+                dict_writer = csv.DictWriter(weather_file, headers)
+                dict_writer.writerows(data_chunk)
 
-i = 1
-for line in lines:
-        line = line.strip() # remove leading/trailing white spaces
-        if line:
-                if i == 1:
-                        columns1 = [item.strip() for item in line.split('\t')]
-                        i = i + 1
-                elif i == 2:
-                        columns2 = [item.strip() for item in line.split('\t')]
-                        for item in columns1:
-                                
-                else:
-                        d = {} # dictionary to store file data (each line)
-                        data = [item.strip() for item in line.split(',')]
-                        for index, elem in enumerate(data):
-                                d[columns[index]] = data[index]
-                        my_list.append(d) # append dictionary to list
-filename = "weather_data.csv"
-open(filename,w)
+print("Done")
