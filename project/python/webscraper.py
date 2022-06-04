@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup as bs
 import numpy as np
 import csv
 import re
-import datetime as dt
+from datetime import datetime as dt, timedelta as td
 
 # Opens the url given through params and returns the open page_html file
 def url_parse(link):
@@ -65,7 +65,7 @@ def url_csv_parse(link, columns):
                         data_dict = {} # dictionary to store file data (each row)
                         data = []
                         # Needed to format date the same as the txt files
-                        data.append(dt.datetime.strptime(row[0].split(' ')[0], "%Y/%m/%d").\
+                        data.append(dt.strptime(row[0].split(' ')[0], "%Y/%m/%d").\
                                     strftime("%d-%m-%y"))  # date and time
                         data.append(row[6])  # temp values
                         data.append(row[7])  # hum values
@@ -102,12 +102,20 @@ def process_data(data_points):
                                 rain.append(data["Rain"])
                 if(temps and hums and pres and rain):
                         mean_temp = np.array(temps, dtype=np.float32).mean()
-                        min_temp = np.array(temps, dtype=np.float32).min()
                         max_temp = np.array(temps, dtype=np.float32).max()
+                        min_temp = np.array(temps, dtype=np.float32).min()
+                        
                         mean_hum = np.array(hums, dtype=np.float32).mean()
+                        max_hum = np.array(hums, dtype=np.float32).max()
+                        min_hum = np.array(hums, dtype=np.float32).min()
+
                         mean_pres = np.array(pres, dtype=np.float32).mean()
+                        max_pres = np.array(pres, dtype=np.float32).max()
+                        min_pres = np.array(pres, dtype=np.float32).min()
+
                         mm_rain = np.array(rain, dtype=np.float32).sum()
-                        values = [date, mean_temp, max_temp, min_temp, mean_hum, mean_pres, mm_rain]
+                        values = [date, mean_temp, max_temp, min_temp, mean_hum, max_hum, min_hum,\
+                                  mean_pres, max_pres, min_pres, mm_rain]
 
                         processed_data = {}
                         for index, elem in enumerate(values):
@@ -115,8 +123,11 @@ def process_data(data_points):
                         processed_data_points.append(processed_data) # append dictionary to list
         return processed_data_points
 
+
 if __name__ == "__main__":
         # Webscrape section
+        start_time = dt.now()
+
         my_url = 'http://weather.science.uq.edu.au/Archive/'
 
         homepage_html = url_parse(my_url)
@@ -152,33 +163,64 @@ if __name__ == "__main__":
         # Remove this aberrant scum >:(
         csv_urls.\
         remove('http://weather.science.uq.edu.au/Archive/2019/2019_10/20191002_to_1009_T140258.csv')
+        
+        
 
         headers = ["Date","Temperature","Relative Humidity","Sea Level Pressure","Rain",\
                 "Rain Intensity"]
 
         condensed_headers = ["Date", "Avg Temperature" ,"Max Temperature", "Min Temperature",\
-                        "Avg Humidity","Avg Pressure","mm of Rain"]
+                             "Avg Humidity","Max Humidity", "Min Humidity", "Avg Pressure",\
+                             "Max Pressure", "Min Pressure","mm of Rain"]
         condensed_data = {}
 
+        # Check the latest data file to see its date, if it is later than the latest data entry in
+        # the downloaded csv then go back to the date after our latest and continue reading from
+        # there
 
-        with open("weather_data.csv", "w", newline = '') as weather_file:
-                        dict_writer = csv.DictWriter(weather_file, condensed_headers)
-                        dict_writer.writeheader()
+        with open("weather_data.csv", "r", newline = '') as weather_file:
+                lines = weather_file.readlines()
+                # Grabs the latest date in the csv file
+                latest_date_csv = dt.strptime(lines[-1].split(",")[0], "%d-%m-%y")
 
-        for link in txt_urls:
-                data_chunk = process_data(url_txt_parse(link, headers))
+        date_of_url = dt.strptime(csv_urls[-1].split("/")[6][0:8], "%Y%m%d")
+        print(date_of_url)
+        
+        if (latest_date_csv < date_of_url):
+                # Getting the date of the last data point from the csv and then adding a day to it
+                next_date = (latest_date_csv + td(days=1)).strftime("%Y%m%d")
+                next_url = [url for url in csv_urls if next_date in url]
+                
+                for link in csv_urls[csv_urls.index(next_url[0]):]:
+                        data_chunk = process_data(url_csv_parse(link, headers))
 
-                # Write all the data to a csv file called weather data
-                with open("weather_data.csv", "a", newline = '') as weather_file:
-                        dict_writer = csv.DictWriter(weather_file, condensed_headers)
-                        dict_writer.writerows(data_chunk)
+                        with open("weather_data.csv", "a", newline='') as weather_file:
+                                dict_writer = csv.DictWriter(weather_file, condensed_headers)
+                                dict_writer.writerows(data_chunk)
+        elif (latest_date_csv == date_of_url):
+                # Nothing to do
+                print("nothing to do")
+        else:
+
+                with open("weather_data.csv", "w", newline = '') as weather_file:
+                                dict_writer = csv.DictWriter(weather_file, condensed_headers)
+                                dict_writer.writeheader()
+
+                for link in txt_urls:
+                        data_chunk = process_data(url_txt_parse(link, headers))
+
+                        # Write all the data to a csv file called weather data
+                        with open("weather_data.csv", "a", newline = '') as weather_file:
+                                dict_writer = csv.DictWriter(weather_file, condensed_headers)
+                                dict_writer.writerows(data_chunk)
 
 
-        for link in csv_urls:
-                data_chunk = process_data(url_csv_parse(link, headers))
-                # Write all the data to a csv file called weather data
-                with open("weather_data.csv", "a", newline = '') as weather_file:
-                        dict_writer = csv.DictWriter(weather_file, condensed_headers)
-                        dict_writer.writerows(data_chunk)
+                for link in csv_urls:
+                        data_chunk = process_data(url_csv_parse(link, headers))
+                        # Write all the data to a csv file called weather data
+                        with open("weather_data.csv", "a", newline = '') as weather_file:
+                                dict_writer = csv.DictWriter(weather_file, condensed_headers)
+                                dict_writer.writerows(data_chunk)
 
-        print("Done")
+
+        print("Done, took:" + str(dt.now() - start_time))

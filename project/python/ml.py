@@ -7,19 +7,22 @@
 ####################################################################################################
 
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
+from sklearn import metrics
 import pandas as pd
 import matplotlib.pyplot as plt
  
 # Trains KNN with full training set and takes sensor readings X_in to give a prediction y_predit
 # as to whether it will rain tomorrow
 def knn_train_realtime(X_in):
+        
         X_train = df[features]
         y_train = df['Rain Tomorrow']
 
         X_test = X_in
         #y_test = y_in # this would be tomorrow's data on whether it rained or not
-        model = KNeighborsClassifier(n_neighbors=7)
+        model = KNeighborsClassifier(n_neighbors=20)
         model.fit(X_train, y_train)
         y_predict = model.predict(X_test)
 
@@ -41,12 +44,13 @@ df["Rain Tomorrow"] = rain_tmr
 
 df = df.fillna(0, axis = "columns")
 
-features = ["Max Temperature", "Min Temperature", "Avg Temperature",\
-                     "Avg Humidity","Avg Pressure","mm of Rain"]
+features = ["Avg Temperature", "Max Temperature", "Min Temperature",\
+            "Avg Humidity", "Max Humidity", "Min Humidity",\
+            "Avg Pressure", "Max Pressure", "Min Pressure","mm of Rain"]
 # Changing the types of all data columns to be a numerical type
-df[["Max Temperature", "Min Temperature", "Avg Temperature", "Avg Humidity", "Avg Pressure",\
+df[["Avg Temperature", "Max Temperature", "Min Temperature", "Avg Humidity", "Avg Pressure",\
     "mm of Rain", "Rain Tomorrow"]]\
-= df[["Max Temperature", "Min Temperature", "Avg Temperature", "Avg Humidity", "Avg Pressure",\
+= df[["Avg Temperature", "Max Temperature", "Min Temperature", "Avg Humidity", "Avg Pressure",\
       "mm of Rain", "Rain Tomorrow"]].apply(pd.to_numeric)
 
 X = df[features]
@@ -56,7 +60,8 @@ y = df['Rain Tomorrow']
 # Main loop if this file is opened to show optimisation metrics
 if __name__ == "__main__":
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-        model = KNeighborsClassifier(n_neighbors=7)
+        
+        model = KNeighborsClassifier(n_neighbors=20)
         model.fit(X_train, y_train)
         y_predict = model.predict(X_test)
         print(model.score(X_test, y_test))
@@ -65,6 +70,13 @@ if __name__ == "__main__":
                 model = KNeighborsClassifier(n_neighbors=n)
                 model.fit(X_train,y_train)
                 scores.append(model.score(X_test,y_test))
+
+        model2 = RandomForestClassifier(n_estimators=500)
+        model2.fit(X_train, y_train)
+        y_predict = model2.predict(X_test)
+        print("Accuracy:",metrics.accuracy_score(y_test, y_predict))
+
+
         plt.figure()
         plt.plot(range(1,40), scores)
         plt.title("KNN Optimisation")
@@ -72,7 +84,7 @@ if __name__ == "__main__":
         plt.ylabel("Score ratio")
         plt.show()
 
-        # So based off this we can estimate a neighbour pick of around 7 is appropriate
+        # So based off this we can estimate a neighbour pick of around 20 is appropriate
 
         plt.figure()
         df['Rain Tomorrow'].hist(align=('mid'))

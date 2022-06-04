@@ -32,6 +32,7 @@ class SerialPort(QThread):
         newData = pyqtSignal(str)
 
         def __init__(self, port=None):
+                
                 # Initialise the thread
                 super(SerialPort, self).__init__()
                 self.port = port
@@ -42,6 +43,7 @@ class SerialPort(QThread):
                         print("Couldn't open serial port")
 
         def run(self):
+                
                 # Continuously try and read from serial port and send data to to GUI
                 while True:
                         try:
@@ -67,10 +69,10 @@ class SerialPort(QThread):
                         time.sleep(0.01)
 
 
-
 class GUI(QMainWindow):
         # Main GUI class
         def __init__(self, parent=None):
+                
                 super(GUI, self).__init__(parent)
                 self.setWindowTitle("GUI")
                 self.serialPort = SerialPort('/dev/ttyACM1')
@@ -79,6 +81,7 @@ class GUI(QMainWindow):
 
 
         def setupUi(self, MainWindow): 
+                
                 MainWindow.setObjectName("MainWindow")
                 MainWindow.resize(1000,1000)
                 self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -94,15 +97,15 @@ class GUI(QMainWindow):
                 x_data = [1]
                 y_data = [random.randrange(10)]
 
-                scatter = pg.ScatterPlotItem(x_data, y_data,
-                        size=10, brush=[pg.mkBrush(c) for c in "r"])
+                scatter = pg.ScatterPlotItem(x_data, y_data, size=10,\
+                                             brush=[pg.mkBrush(c) for c in "r"])
                 self.graphicsView.clear()
                 self.graphicsView.addItem(scatter)
                 self.graphicsView.setXRange(0,18, padding=0)
                 self.graphicsView.setYRange(0,12, padding=0)
 
 
-        def receiveLine(self, line): 
+        def receiveLine(self, line):
                 self.graphicsView.clear()
                 self.graphicsView.setXRange(0,400, padding=0)
                 self.graphicsView.setYRange(0,400, padding=0)
@@ -120,6 +123,7 @@ class GUI(QMainWindow):
 
 
 if __name__ == "__main__":
+        
         app = QApplication(sys.argv)
         loop = QEventLoop(app)
         MainWindow = QtWidgets.QMainWindow()

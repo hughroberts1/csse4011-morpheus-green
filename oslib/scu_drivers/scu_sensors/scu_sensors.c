@@ -38,7 +38,7 @@ K_THREAD_DEFINE(scu_sen54_thread_tid, THREAD_SCU_SEN54_POLL_STACK, thread_scu_se
 		NULL, NULL, NULL, THREAD_SCU_SEN54_POLL_PRIORITY, 0, 0);
 
 // Zeroing the struct that will hold the current sensor data
-struct scuSensorData currentSensorData = {0,0,0,{0,0,0},0,0,0,{0,0,0,0},0};
+struct static scuSensorData currentSensorData = {0,0,0,{0,0,0},0,0,0,{0,0,0,0},0};
 
 // Setting up the ultrasonic callback data struct
 static struct gpio_callback usCbData;
