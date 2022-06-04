@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 from sklearn import metrics
 import pandas as pd
 import matplotlib.pyplot as plt
- 
+import webscraper
 # Trains KNN with full training set and takes sensor readings X_in to give a prediction y_predit
 # as to whether it will rain tomorrow
 def knn_train_realtime(X_in):
@@ -25,6 +25,18 @@ def knn_train_realtime(X_in):
         model = KNeighborsClassifier(n_neighbors=20)
         model.fit(X_train, y_train)
         y_predict = model.predict(X_test)
+        print("Accuracy:", model.score(X_test, y_test))
+
+def rf_train_realtime(X_in):
+        X_train = df[features]
+        y_train = df['Rain Tomorrow']
+
+        X_test = X_in
+        #y_test = y_in # this would be tomorrow's data on whether it rained or not
+        model = RandomForestClassifier(n_estimators=500)
+        model.fit(X_train, y_train)
+        y_predict = model.predict(X_test)
+        print("Accuracy:", metrics.accuracy_score(y_test, y_predict))
 
 
 df = pd.read_csv('weather_data.csv')
