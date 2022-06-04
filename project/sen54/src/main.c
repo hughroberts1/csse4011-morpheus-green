@@ -12,5 +12,4 @@
 #include "sensirion_common.h"
 #include "sensirion_i2c_hal.h"
 
-K_THREAD_DEFINE(scu_sen54_thread_tid, THREAD_SCU_SEN54_POLL_STACK, thread_scu_sen54_poll,
-		NULL, NULL, NULL, THREAD_SCU_SEN54_POLL_PRIORITY, 0, 0);
+

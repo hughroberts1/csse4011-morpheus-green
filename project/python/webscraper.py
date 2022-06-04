@@ -107,78 +107,78 @@ def process_data(data_points):
                         mean_hum = np.array(hums, dtype=np.float32).mean()
                         mean_pres = np.array(pres, dtype=np.float32).mean()
                         mm_rain = np.array(rain, dtype=np.float32).sum()
-                        values = [date, mean_temp, max_temp, min_temp, mean_hum, mean_pres]
+                        values = [date, mean_temp, max_temp, min_temp, mean_hum, mean_pres, mm_rain]
 
                         processed_data = {}
-                        for index, elem in enumerate(data):
+                        for index, elem in enumerate(values):
                                 processed_data[condensed_headers[index]] = values[index]
                         processed_data_points.append(processed_data) # append dictionary to list
         return processed_data_points
 
+if __name__ == "__main__":
+        # Webscrape section
+        my_url = 'http://weather.science.uq.edu.au/Archive/'
 
-# Webscrape section
-my_url = 'http://weather.science.uq.edu.au/Archive/'
+        homepage_html = url_parse(my_url)
+        homepage_urls = []
+        homepage_soup = bs(homepage_html, "html.parser")
 
-homepage_html = url_parse(my_url)
-homepage_urls = []
-homepage_soup = bs(homepage_html, "html.parser")
+        for link in homepage_soup.find_all('a'):
+                if re.search("^20",link.get('href')):
+                        homepage_urls.append(my_url + link.get('href'))
 
-for link in homepage_soup.find_all('a'):
-        if re.search("^20",link.get('href')):
-                homepage_urls.append(my_url + link.get('href'))
+        subpage_urls = []
+        txt_urls = []
+        csv_urls = []
+        for link in homepage_urls:
+                subpage_html = url_parse(link)
+                subpage_soup = bs(subpage_html, "html.parser")
+                for sublink in subpage_soup.find_all('a'):
+                        if re.search("20\d\d-\d\d\.txt",sublink.get('href')):
+                                txt_urls.append(link + sublink.get('href'))
+                        elif re.search("[01]\d/$",sublink.get('href')):
+                                subpage_urls.append(link + sublink.get('href'))
 
-subpage_urls = []
-txt_urls = []
-csv_urls = []
-for link in homepage_urls:
-        subpage_html = url_parse(link)
-        subpage_soup = bs(subpage_html, "html.parser")
-        for sublink in subpage_soup.find_all('a'):
-                if re.search("20\d\d-\d\d\.txt",sublink.get('href')):
-                        txt_urls.append(link + sublink.get('href'))
-                elif re.search("[01]\d/$",sublink.get('href')):
-                        subpage_urls.append(link + sublink.get('href'))
+        # Remove because these are doubles (there are csv and txt files covering these date ranges)
+        subpage_urls.remove('http://weather.science.uq.edu.au/Archive/2017/2017_03/')
 
-# Remove because these are doubles (there are csv and txt files covering these date ranges)
-subpage_urls.remove('http://weather.science.uq.edu.au/Archive/2017/2017_03/')
+        for link in subpage_urls:
+                subsubpage_html = url_parse(link)
+                subsubpage_soup = bs(subsubpage_html, "html.parser")
+                for sublink in subsubpage_soup.find_all('a'):
+                        if re.search("\.csv",sublink.get('href')):
+                                csv_urls.append(link + sublink.get('href'))
 
-for link in subpage_urls:
-        subsubpage_html = url_parse(link)
-        subsubpage_soup = bs(subsubpage_html, "html.parser")
-        for sublink in subsubpage_soup.find_all('a'):
-                if re.search("\.csv",sublink.get('href')):
-                        csv_urls.append(link + sublink.get('href'))
-
-# Remove this aberrant scum >:(
-csv_urls.\
+        # Remove this aberrant scum >:(
+        csv_urls.\
         remove('http://weather.science.uq.edu.au/Archive/2019/2019_10/20191002_to_1009_T140258.csv')
 
-headers = ["Date","Temperature","Relative Humidity","Sea Level Pressure","Rain",\
-           "Rain Intensity"]
+        headers = ["Date","Temperature","Relative Humidity","Sea Level Pressure","Rain",\
+                "Rain Intensity"]
 
-condensed_headers = ["Date","Max Temperature", "Min Temperature", "Avg Temperature",\
-                     "Avg Humidity","Avg Pressure","mm of Rain"]
-condensed_data = {}
-
-
-with open("weather_data.csv", "w", newline = '') as weather_file:
-                dict_writer = csv.DictWriter(weather_file, condensed_headers)
-                dict_writer.writeheader()
-
-for link in txt_urls:
-        data_chunk = process_data(url_txt_parse(link, headers))
-
-        # Write all the data to a csv file called weather data
-        with open("weather_data.csv", "a", newline = '') as weather_file:
-                dict_writer = csv.DictWriter(weather_file, condensed_headers)
-                dict_writer.writerows(data_chunk)
+        condensed_headers = ["Date", "Avg Temperature" ,"Max Temperature", "Min Temperature",\
+                        "Avg Humidity","Avg Pressure","mm of Rain"]
+        condensed_data = {}
 
 
-for link in csv_urls:
-        data_chunk = process_data(url_csv_parse(link, headers))
-        # Write all the data to a csv file called weather data
-        with open("weather_data.csv", "a", newline = '') as weather_file:
-                dict_writer = csv.DictWriter(weather_file, condensed_headers)
-                dict_writer.writerows(data_chunk)
+        with open("weather_data.csv", "w", newline = '') as weather_file:
+                        dict_writer = csv.DictWriter(weather_file, condensed_headers)
+                        dict_writer.writeheader()
 
-print("Done")
+        for link in txt_urls:
+                data_chunk = process_data(url_txt_parse(link, headers))
+
+                # Write all the data to a csv file called weather data
+                with open("weather_data.csv", "a", newline = '') as weather_file:
+                        dict_writer = csv.DictWriter(weather_file, condensed_headers)
+                        dict_writer.writerows(data_chunk)
+
+
+        for link in csv_urls:
+                data_chunk = process_data(url_csv_parse(link, headers))
+                # Write all the data to a csv file called weather data
+                with open("weather_data.csv", "a", newline = '') as weather_file:
+                        dict_writer = csv.DictWriter(weather_file, condensed_headers)
+                        dict_writer.writerows(data_chunk)
+
+        print("Done")

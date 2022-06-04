@@ -9,7 +9,21 @@
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 import pandas as pd
+import matplotlib.pyplot as plt
  
+# Trains KNN with full training set and takes sensor readings X_in to give a prediction y_predit
+# as to whether it will rain tomorrow
+def knn_train_realtime(X_in):
+        X_train = df[features]
+        y_train = df['Rain Tomorrow']
+
+        X_test = X_in
+        #y_test = y_in # this would be tomorrow's data on whether it rained or not
+        model = KNeighborsClassifier(n_neighbors=7)
+        model.fit(X_train, y_train)
+        y_predict = model.predict(X_test)
+
+
 df = pd.read_csv('weather_data.csv')
 # Add column for if it will rain tomorrow
 rain_tmr = []
@@ -18,17 +32,54 @@ for item in df["mm of Rain"]:
                 rain_tmr.append(1)
         else:
                 rain_tmr.append(0)
+# Get rid of first element to shift the array to the left
+rain_tmr.pop(0)
+# Introduce a null value for the last element since we don't know if it will rain tmr
+rain_tmr.append(0)
 
 df["Rain Tomorrow"] = rain_tmr
 
-print(df.head())
-def knn_train():
-        
-        X = df[features]
-        y = df['Rain Tomorrow']
-        X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+df = df.fillna(0, axis = "columns")
 
-        model = KNeighborsClassifier(n_neighbors=2)
+features = ["Max Temperature", "Min Temperature", "Avg Temperature",\
+                     "Avg Humidity","Avg Pressure","mm of Rain"]
+# Changing the types of all data columns to be a numerical type
+df[["Max Temperature", "Min Temperature", "Avg Temperature", "Avg Humidity", "Avg Pressure",\
+    "mm of Rain", "Rain Tomorrow"]]\
+= df[["Max Temperature", "Min Temperature", "Avg Temperature", "Avg Humidity", "Avg Pressure",\
+      "mm of Rain", "Rain Tomorrow"]].apply(pd.to_numeric)
+
+X = df[features]
+y = df['Rain Tomorrow']
+
+
+# Main loop if this file is opened to show optimisation metrics
+if __name__ == "__main__":
+        X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        model = KNeighborsClassifier(n_neighbors=7)
         model.fit(X_train, y_train)
-        model.score(X_test, Y_test)
-        return model.predict(X_test)
+        y_predict = model.predict(X_test)
+        print(model.score(X_test, y_test))
+        scores = []
+        for n in range(1,40):
+                model = KNeighborsClassifier(n_neighbors=n)
+                model.fit(X_train,y_train)
+                scores.append(model.score(X_test,y_test))
+        plt.figure()
+        plt.plot(range(1,40), scores)
+        plt.title("KNN Optimisation")
+        plt.xlabel("Number of Neighbours")
+        plt.ylabel("Score ratio")
+        plt.show()
+
+        # So based off this we can estimate a neighbour pick of around 7 is appropriate
+
+        plt.figure()
+        df['Rain Tomorrow'].hist(align=('mid'))
+
+        plt.title("Days raining vs not raining")
+        # We do get creative
+        plt.xlabel("0: Not Raining                                                      1: Raining")
+        plt.ylabel("Days")
+        plt.legend()
+        plt.show()

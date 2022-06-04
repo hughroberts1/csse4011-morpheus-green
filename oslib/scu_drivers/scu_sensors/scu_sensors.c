@@ -34,6 +34,8 @@ char* portName = "GPIO_1";
 
 K_SEM_DEFINE(usSem, 0, 1);
 K_MUTEX_DEFINE(scuMutex);
+K_THREAD_DEFINE(scu_sen54_thread_tid, THREAD_SCU_SEN54_POLL_STACK, thread_scu_sen54_poll,
+		NULL, NULL, NULL, THREAD_SCU_SEN54_POLL_PRIORITY, 0, 0);
 
 // Zeroing the struct that will hold the current sensor data
 struct scuSensorData currentSensorData = {0,0,0,{0,0,0},0,0,0,{0,0,0,0},0};
@@ -280,8 +282,6 @@ void thread_scu_sen54_poll(void)
     	if (err)
         	printk("Error executing sen5x_start_measurement(): %i\n", err);
 
-	
-	// TODO: Put this for loop in a thread for continuous polling?
 	while (1) {
 		k_sleep(K_SECONDS(samplingTime));
 		if (k_mutex_lock(&scuMutex, K_FOREVER) != 0) {
@@ -292,10 +292,10 @@ void thread_scu_sen54_poll(void)
 		err = sen5x_read_measured_values(&vals[0], &vals[1], &vals[2], &vals[3], &vals[4],
 						 &vals[5], &vals[6], &vals[7]);
 		// Adjust scaling of data
-		currentSensorData.particle[0] = vals[0] / 10.0f;
-		currentSensorData.particle[1] = vals[1] / 10.0f;
-		currentSensorData.particle[2] = vals[2] / 10.0f;
-		currentSensorData.particle[3] = vals[3] / 10.0f;
+		//currentSensorData.particle[0] = vals[0] / 10.0f;
+		//currentSensorData.particle[1] = vals[1] / 10.0f;
+		//currentSensorData.particle[2] = vals[2] / 10.0f;
+		currentSensorData.pm10 = vals[3] / 10.0f;
 		currentSensorData.humidity = vals[4] / 100.0f;
 		currentSensorData.temperature = vals[5] / 200.0f;
 		currentSensorData.voc = vals[6] / 10.0f;
@@ -303,8 +303,8 @@ void thread_scu_sen54_poll(void)
 		k_mutex_unlock(&scuMutex);
 
 		printk("Temp:%.2f Hum:%.2f VOC:%.2f Particle:%.2f \n",
-		       currentSensorData.temperature, currentSensorData.humidity,
-		       currentSensorData.voc, currentSensorData.particle[3]);
+		       scu_sensors_temp_get(), scu_sensors_hum_get(),
+		       scu_sensors_voc_get(), scu_sensors_pm10_get());
 	}
 	err = sen5x_stop_measurement();
 	if (err)
@@ -314,7 +314,123 @@ void thread_scu_sen54_poll(void)
 #endif
 
 /**
- * @brief Initialise one of the desired scu sensors, by default sampling time is 1 seconds
+ * @brief Getter function that safely retrieves temperature from the global sensor struct
+ * 
+ * @return float The return value is temperature as a float
+ */
+float scu_sensors_temp_get()
+{
+        float val;
+        k_mutex_lock(&scuMutex, K_FOREVER);
+        val = currentSensorData.temperature;
+        k_mutex_unlock(&scuMutex);
+        return val;
+}
+
+/**
+ * @brief Getter function that safely retrieves humidity from the global sensor struct
+ * 
+ * @return float The return value is humidity as a float
+ */
+float scu_sensors_hum_get()
+{
+        float val;
+        k_mutex_lock(&scuMutex, K_FOREVER);
+        val = currentSensorData.humidity;
+        k_mutex_unlock(&scuMutex);
+        return val;
+}
+
+/**
+ * @brief Getter function that safely retrieves pressure from the global sensor struct
+ * 
+ * @return float The return value is pressure as a float
+ */
+float scu_sensors_pressure_get()
+{
+        float val;
+        k_mutex_lock(&scuMutex, K_FOREVER);
+        val = currentSensorData.pressure;
+        k_mutex_unlock(&scuMutex);
+        return val;
+}
+
+/**
+ * @brief Getter function that safely retrieves acceleration from the global sensor struct
+ * 
+ * @return float The return value is acceleration as a pointer float that holds the 3 axis values
+ */
+//TODO: If there is a problem its likely because returning a pointer that is a local
+//      variable and it not being declared in memory with malloc or something
+float *scu_sensors_acel_get()
+{
+        float *val;
+        k_mutex_lock(&scuMutex, K_FOREVER);
+        val = currentSensorData.acceleration;
+        k_mutex_unlock(&scuMutex);
+        return val;
+}
+
+/**
+ * @brief Getter function that safely retrieves VOC from the global sensor struct
+ * 
+ * @return float The return value is VOC as a float
+ */
+float scu_sensors_voc_get()
+{
+        float val;
+        k_mutex_lock(&scuMutex, K_FOREVER);
+        val = currentSensorData.voc;
+        k_mutex_unlock(&scuMutex);
+        return val;
+}
+
+/**
+ * @brief Getter function that safely retrieves CO2 from the global sensor struct
+ * 
+ * @return float The return value is CO2 as a float
+ */
+float scu_sensors_co2_get()
+{
+        float val;
+        k_mutex_lock(&scuMutex, K_FOREVER);
+        val = currentSensorData.co2;
+        k_mutex_unlock(&scuMutex);
+        return val;
+}
+
+/**
+ * @brief Getter function that safely retrieves particulate matter (size < 10 um) 
+ *        from the global sensor struct
+ * 
+ * @return float The return value is particulate matter as a float
+ */
+float scu_sensors_pm10_get()
+{
+        float val;
+        k_mutex_lock(&scuMutex, K_FOREVER);
+        val = currentSensorData.pm10;
+        k_mutex_unlock(&scuMutex);
+        return val;
+}
+
+/**
+ * @brief Getter function that safely retrieves distance from the global sensor struct
+ * 
+ * @return float The return value is distance as an int16_t, if the value is -ve then the distance
+ *         is invalid
+ */
+int16_t scu_sensors_dist_get()
+{
+        float val;
+        k_mutex_lock(&scuMutex, K_FOREVER);
+        val = currentSensorData.distance;
+        k_mutex_unlock(&scuMutex);
+        return val;
+}
+
+/**
+ * @brief Initialise one of the desired scu sensors, by default sampling time is 30 seconds
  * 
  * @param devName The name of the device/sensor to be initialised
  * @return *dev The pointer to the device that has been initialised
@@ -388,14 +504,14 @@ const struct device* scu_sensors_init(char *devName)
 
 
 /**
- * @brief Set the scu sensors' sampling time between once per 10 seconds to once per 5 mins
+ * @brief Set the scu sensors' sampling time between once per 5 seconds to once per 5 mins
  * 
  * @param newSampTime The sampling time to set on the device in seconds
  * @return int The error code
  */
 int scu_sensors_samp_time_set(int newSampTime)
 {
-	if(newSampTime >= 1 && newSampTime <= 300) {
+	if(newSampTime >= 5 && newSampTime <= 300) {
 		samplingTime = newSampTime;
 		return 0;
 	} else

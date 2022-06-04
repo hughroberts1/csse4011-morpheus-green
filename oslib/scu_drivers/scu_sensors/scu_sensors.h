@@ -18,7 +18,7 @@
 #include <drivers/sensor/ccs811.h>
 
 // Other Defines
-#define SAMPLING_TIME_DEFAULT 60
+#define SAMPLING_TIME_DEFAULT 5
 
 // Hash defines for the ultrasonic sensor
 #define TRIG_PULSE_US 11
@@ -36,16 +36,16 @@
 /* Thread Priorities */
 #define THREAD_SCU_SEN54_POLL_PRIORITY 3
 
-struct scuSensorData {
+struct scuSensorData
+{
 	float temperature;
 	float humidity;
 	float pressure;
-	// In order x, y, z
-	float acceleration[3];
+	float acceleration[3];  // In order x, y, z
 	float voc;
 	float co2;
 	float nox;
-	float particle[4];
+	float pm10;		// Mass concentration of particles sized 0.3 - 10 um in ug/m^3
 	int16_t distance;
 };
 
@@ -66,7 +66,14 @@ void scu_process_hts221_sample(void);
 void scu_process_lis2dh_sample(void);
 void scu_process_ccs811_sample(void);
 void scu_process_ultrasonic_sample(void);
-
+float scu_sensors_temp_get(void);
+float scu_sensors_hum_get(void);
+float scu_sensors_pressure_get(void);
+float *scu_sensors_acel_get(void);
+float scu_sensors_voc_get(void);
+float scu_sensors_co2_get(void);
+float scu_sensors_pm10_get(void);
+int16_t scu_sensors_dist_get(void);
 /* Thread function prototypes */
 void thread_scu_sen54_poll(void);
 #endif
