@@ -16,10 +16,11 @@
 #define HUMIDITY 0x03
 #define VOC 0x04
 #define CO2 0x05
+#define PM10 0x06
 
 #define PROVISION_WAIT_TIME 10
 
-#define NUM_DEVICES 5
+#define NUM_DEVICES 6
 
 #define SENSOR_CLIENT_MODEL 4
 

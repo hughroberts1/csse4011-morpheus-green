@@ -75,7 +75,8 @@ struct Map devices[NUM_DEVICES] = {
 	{.device_id = PRESSURE, .device_name = "PRESSURE"},
 	{.device_id = HUMIDITY, .device_name = "HUMIDITY"},
 	{.device_id = VOC, .device_name = "VOC"},
-	{.device_id = CO2, .device_name = "CO2"}
+	{.device_id = CO2, .device_name = "CO2"},
+	{.device_id = PM10, .device_name = "PM10"},
 };
 
 char* get_device_name(uint8_t device_id)
@@ -146,7 +147,7 @@ static int sensor_status(struct bt_mesh_model *model,
 	uint16_t addr = ctx->addr;
 	struct bt_mesh_cdb_node *node = bt_mesh_cdb_node_get(addr);
 
-	uint8_t type = net_buf_simple_pull_u8(buf);
+	net_buf_simple_pull_u8(buf);
 	uint32_t time = net_buf_simple_pull_le32(buf);
 	uint8_t device = net_buf_simple_pull_u8(buf);
 	uint32_t data = net_buf_simple_pull_le32(buf);
