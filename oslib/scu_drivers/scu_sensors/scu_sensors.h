@@ -61,11 +61,12 @@ extern int threadRunFlag;
 /* Function Prototypes..*/
 const struct device* scu_sensors_init(char *);
 int scu_sensors_samp_time_set(int);
-void scu_process_lps22hb_sample(void);
-void scu_process_hts221_sample(void);
-void scu_process_lis2dh_sample(void);
-void scu_process_ccs811_sample(void);
-void scu_process_ultrasonic_sample(void);
+static void scu_process_lps22hb_sample(void);
+static void scu_process_hts221_sample(void);
+static void scu_process_lis2dh_sample(void);
+static void scu_process_ccs811_sample(void);
+static void scu_process_ultrasonic_sample(void);
+static void scu_process_sen54_sample(struct scuSensorData *data);
 float scu_sensors_temp_get(void);
 float scu_sensors_hum_get(void);
 float scu_sensors_pressure_get(void);
@@ -75,5 +76,5 @@ float scu_sensors_co2_get(void);
 float scu_sensors_pm10_get(void);
 int16_t scu_sensors_dist_get(void);
 /* Thread function prototypes */
-void thread_scu_sen54_poll(void);
+static void thread_scu_sen54_poll(void);
 #endif

@@ -64,7 +64,7 @@ int hci_command_interpret(struct HCI_Message *hci_recieve_packet,
 #ifdef CONFIG_LPS22HB
 	case LPS22HB_AIR_PRESSURE:
 		scu_process_lps22hb_sample();
-		hci_response_packet->did = LPS22_AIR_PRESSURE;
+		hci_response_packet->did = LPS22HB_AIR_PRESSURE;
 		memcpy(hci_response_packet->data, &(currentSensorData.pressure),
 			sizeof(currentSensorData.pressure));
 		break;

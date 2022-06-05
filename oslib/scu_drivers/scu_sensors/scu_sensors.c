@@ -20,7 +20,6 @@
 
 // Local Library Include
 #include "scu_sensors.h"
-#include "scu_ble.h"
 
 #ifdef CONFIG_SEN54
 #include "sen5x_i2c.h"
@@ -28,33 +27,36 @@
 #include "sensirion_i2c_hal.h"
 #endif
 
+K_MUTEX_DEFINE(scuMutex);
+
+#ifdef CONFIG_ULTRASONIC
 // Name of the port used for the ultrasonic TODO: see how to change this with devicetree
 // Can change here now for modularity purposes
 char* portName = "GPIO_1";
-
 K_SEM_DEFINE(usSem, 0, 1);
-K_MUTEX_DEFINE(scuMutex);
-K_THREAD_DEFINE(scu_sen54_thread_tid, THREAD_SCU_SEN54_POLL_STACK, thread_scu_sen54_poll,
-		NULL, NULL, NULL, THREAD_SCU_SEN54_POLL_PRIORITY, 0, 0);
-
-// Zeroing the struct that will hold the current sensor data
-struct static scuSensorData currentSensorData = {0,0,0,{0,0,0},0,0,0,{0,0,0,0},0};
-
 // Setting up the ultrasonic callback data struct
 static struct gpio_callback usCbData;
-
-// Flag for whether the continuous sensor sampling thread is running or not 
-int threadRunFlag = 0;
-static int samplingTime = SAMPLING_TIME_DEFAULT;
 uint32_t usStartTime;
 uint32_t usEndTime;
+#endif
+
+#ifdef CONFIG_SEN54
+K_THREAD_DEFINE(scu_sen54_thread_tid, THREAD_SCU_SEN54_POLL_STACK, thread_scu_sen54_poll,
+		NULL, NULL, NULL, THREAD_SCU_SEN54_POLL_PRIORITY, 0, 0);
+#endif
+
+// Zeroing the struct that will hold the current sensor data
+struct scuSensorData currentSensorData = {0,0,0,{0,0,0},0,0,0,{0,0,0,0},0};
+
+static int samplingTime = SAMPLING_TIME_DEFAULT;
+
 
 #ifdef CONFIG_LPS22HB
 /**
  * @brief Function for reading pressure values from the lps22hb
  * 
  */
-void scu_process_lps22hb_sample(void)
+static void scu_process_lps22hb_sample(void)
 {
 
 	const struct device *dev = scu_sensors_init("LPS22HB");
@@ -87,7 +89,7 @@ void scu_process_lps22hb_sample(void)
  * @brief Function for reading temperature and humidity values from the hts221 
  * 
  */
-void scu_process_hts221_sample(void)
+static void scu_process_hts221_sample(void)
 {
 	const struct device *dev = scu_sensors_init("HTS221");
 	struct sensor_value temp, hum;
@@ -126,7 +128,7 @@ void scu_process_hts221_sample(void)
  * @brief Function for reading acceleration values from the lisd2h
  * 
  */
-void scu_process_lis2dh_sample(void)
+static void scu_process_lis2dh_sample(void)
 {
 	const struct device *dev = scu_sensors_init("LIS2DH");
 	struct sensor_value accel[3];
@@ -161,7 +163,7 @@ void scu_process_lis2dh_sample(void)
  * @brief Function for reading VOC value from the ccs811
  * 
  */
-void scu_process_ccs811_sample(void)
+static void scu_process_ccs811_sample(void)
 {
 	const struct device *dev = scu_sensors_init("CCS811");
 	struct sensor_value tvoc, co2;
@@ -180,12 +182,12 @@ void scu_process_ccs811_sample(void)
 		const struct ccs811_result_type *res = ccs811_result(dev);
 		sensor_channel_get(dev, SENSOR_CHAN_VOC, &tvoc);
 		currentSensorData.voc = (float)sensor_value_to_double(&tvoc);
-		sensor_channel_get(dev, SENSOR_CHAN_CO2, &c02);
+		sensor_channel_get(dev, SENSOR_CHAN_CO2, &co2);
 		currentSensorData.co2 = (float)sensor_value_to_double(&co2);
 		printk("Amount of VOC is: %f ppb eTVOC and CO2 is: %f ppb\n", currentSensorData.voc,
 		       currentSensorData.co2);
-		if (rp->status & CCS811_STATUS_ERROR) {
-			printk("ERROR: %02x\n", rp->error);
+		if (res->status & CCS811_STATUS_ERROR) {
+			printk("ERROR: %02x\n", res->error);
 		}
 	}
 	k_mutex_unlock(&scuMutex);
@@ -197,7 +199,7 @@ void scu_process_ccs811_sample(void)
  * @brief Function for reading the distance value from the ultrasonic sensor
  * 
  */
-void scu_process_ultrasonic_sample(void)
+static void scu_process_ultrasonic_sample(void)
 {
 	const struct device *dev = scu_sensors_init(portName);
 
@@ -271,11 +273,35 @@ void echo_recieved_callback(const struct device *dev)
 #endif
 
 #ifdef CONFIG_SEN54
+static void scu_process_sen54_sample(struct scuSensorData *data)
+{
+        if (k_mutex_lock(&scuMutex, K_FOREVER) != 0) {
+			printk("The mutex could not lock\n");
+			return;
+		}
+		uint16_t vals[8] = {0,0,0,0,0,0,0,0};
+		int err = sen5x_read_measured_values(&vals[0], &vals[1], &vals[2], &vals[3], &vals[4],
+						 &vals[5], &vals[6], &vals[7]);
+                if (err)
+        	printk("Error executing sen5x_read_measurement(): %i\n", err);
+		// Adjust scaling of data
+		//data->particle[0] = vals[0] / 10.0f;
+		//data->particle[1] = vals[1] / 10.0f;
+		//data->particle[2] = vals[2] / 10.0f;
+		data->pm10 = vals[3] / 10.0f;
+		data->humidity = vals[4] / 100.0f;
+		data->temperature = vals[5] / 200.0f;
+		data->voc = vals[6] / 10.0f;
+
+		k_mutex_unlock(&scuMutex);
+}
+
+
 /**
  * @brief Function used to poll all data sources from the SEN54, store in the global sensor data
  * 	  struct and print to console
  */
-void thread_scu_sen54_poll(void)
+static void thread_scu_sen54_poll(void)
 {
 	scu_sensors_init("SEN54");
 	int err = sen5x_start_measurement();
@@ -284,7 +310,8 @@ void thread_scu_sen54_poll(void)
 
 	while (1) {
 		k_sleep(K_SECONDS(samplingTime));
-		if (k_mutex_lock(&scuMutex, K_FOREVER) != 0) {
+                scu_process_sen54_sample(&currentSensorData);
+		/*if (k_mutex_lock(&scuMutex, K_FOREVER) != 0) {
 			printk("The mutex could not lock\n");
 			return;
 		}
@@ -300,7 +327,7 @@ void thread_scu_sen54_poll(void)
 		currentSensorData.temperature = vals[5] / 200.0f;
 		currentSensorData.voc = vals[6] / 10.0f;
 
-		k_mutex_unlock(&scuMutex);
+		k_mutex_unlock(&scuMutex);*/
 
 		printk("Temp:%.2f Hum:%.2f VOC:%.2f Particle:%.2f \n",
 		       scu_sensors_temp_get(), scu_sensors_hum_get(),
@@ -319,7 +346,12 @@ void thread_scu_sen54_poll(void)
  * @return float The return value is temperature as a float
  */
 float scu_sensors_temp_get()
-{
+{       
+        #ifdef CONFIG_SEN54
+        scu_process_sen54_sample(&currentSensorData);
+        #elif CONFIG_HTS221
+        scu_process_hts221_sample();
+        #endif
         float val;
         k_mutex_lock(&scuMutex, K_FOREVER);
         val = currentSensorData.temperature;
@@ -334,6 +366,11 @@ float scu_sensors_temp_get()
  */
 float scu_sensors_hum_get()
 {
+        #ifdef CONFIG_SEN54
+        scu_process_sen54_sample(&currentSensorData);
+        #elif CONFIG_HTS221
+        scu_process_hts221_sample();
+        #endif
         float val;
         k_mutex_lock(&scuMutex, K_FOREVER);
         val = currentSensorData.humidity;
@@ -348,6 +385,11 @@ float scu_sensors_hum_get()
  */
 float scu_sensors_pressure_get()
 {
+        #ifdef CONFIG_SEN54
+        scu_process_sen54_sample(&currentSensorData);
+        #elif CONFIG_LPS22HB
+        scu_process_lps22hb_sample();
+        #endif
         float val;
         k_mutex_lock(&scuMutex, K_FOREVER);
         val = currentSensorData.pressure;
@@ -363,7 +405,10 @@ float scu_sensors_pressure_get()
 //TODO: If there is a problem its likely because returning a pointer that is a local
 //      variable and it not being declared in memory with malloc or something
 float *scu_sensors_acel_get()
-{
+{       
+        #ifdef CONFIG_LIS2DH
+        scu_process_lis2dh_sample();
+        #endif
         float *val;
         k_mutex_lock(&scuMutex, K_FOREVER);
         val = currentSensorData.acceleration;
@@ -378,7 +423,13 @@ float *scu_sensors_acel_get()
  */
 float scu_sensors_voc_get()
 {
+        #ifdef CONFIG_SEN54
+        scu_process_sen54_sample(&currentSensorData);
+        #elif CONFIG_CCS811
+        scu_process_ccs811_sample();
+        #endif
         float val;
+
         k_mutex_lock(&scuMutex, K_FOREVER);
         val = currentSensorData.voc;
         k_mutex_unlock(&scuMutex);
@@ -391,7 +442,10 @@ float scu_sensors_voc_get()
  * @return float The return value is CO2 as a float
  */
 float scu_sensors_co2_get()
-{
+{       
+        #ifdef CONFIG_CCS811
+        scu_process_ccs811_sample();
+        #endif
         float val;
         k_mutex_lock(&scuMutex, K_FOREVER);
         val = currentSensorData.co2;
@@ -407,6 +461,9 @@ float scu_sensors_co2_get()
  */
 float scu_sensors_pm10_get()
 {
+        #ifdef CONFIG_SEN54
+        scu_process_sen54_sample(&currentSensorData);
+        #endif
         float val;
         k_mutex_lock(&scuMutex, K_FOREVER);
         val = currentSensorData.pm10;
@@ -421,7 +478,10 @@ float scu_sensors_pm10_get()
  *         is invalid
  */
 int16_t scu_sensors_dist_get()
-{
+{       
+        #ifdef CONFIG_ULTRASONIC
+        scu_process_ultrasonic_sample();
+        #endif
         float val;
         k_mutex_lock(&scuMutex, K_FOREVER);
         val = currentSensorData.distance;

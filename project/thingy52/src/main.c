@@ -5,10 +5,18 @@
 #include <sys/printk.h>
 
 /* Include files from our library */
-#include "scu_ble.h"
-#include "scu_power_management.h"
 #include "scu_sensors.h"
 
 
 
 
+void main (void)
+{       
+        while(1) {
+	        scu_sensors_temp_get();
+                scu_sensors_hum_get();
+	        scu_sensors_voc_get();
+                scu_sensors_pressure_get();
+                k_sleep(K_SECONDS(1));
+        }
+}

@@ -1,4 +1,4 @@
-set(BOARD particle_argon)
+set(BOARD thingy52_nrf52832)
 set(BOARD_FLASH_RUNNER jlink)
 set(CONF_FILE prj.conf segger_rtt.conf bt.conf)
 

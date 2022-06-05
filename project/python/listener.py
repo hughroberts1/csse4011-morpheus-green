@@ -51,13 +51,12 @@ class SerialPort(QThread):
                                 data = json.loads(line)
                                 # Data is sent off to dash board as soon as its read data should 
                                 # come every 5 minutes by default but not necessarily
-                                point = (Point("weatherData").field(sensor_fields[0] =\
-                                         data[sensor_fields[0]],\
-                                         sensor_fields[1] = data[sensor_fields[1]],\
-                                         sensor_fields[2] = data[sensor_fields[2]],\
-                                         sensor_fields[3] = data[sensor_fields[3]],\
-                                         sensor_fields[4] = data[sensor_fields[4]],\
-                                         sensor_fields[5] = data[sensor_fields[5]]))
+                                point = (Point("weatherData").field(sensor_fields[0]=data[sensor_fields[0]],\
+                                         sensor_fields[1]=data[sensor_fields[1]],\
+                                         sensor_fields[2]=data[sensor_fields[2]],\
+                                         sensor_fields[3]=data[sensor_fields[3]],\
+                                         sensor_fields[4]=data[sensor_fields[4]],\
+                                         sensor_fields[5]=data[sensor_fields[5]]))
                                 write_api.write(bucket=bucket, org="o.roman@uqconnect.edu.au",\
                                                 record=point)
                                 self.newData.emit(line)
