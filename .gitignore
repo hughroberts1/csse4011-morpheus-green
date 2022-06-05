@@ -73,9 +73,6 @@ _deps
 # build folder 
 build/
 
-# scripts
-*.sh
-
 # pdf files
 *.pdf
 

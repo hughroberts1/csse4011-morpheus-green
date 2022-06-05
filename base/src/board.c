@@ -6,7 +6,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <bluetooth/mesh.h>
 #include <drivers/gpio.h>
 #include "board.h"
 
@@ -76,7 +75,7 @@ static int led_init(void)
 	return 0;
 }
 
-static int button_init(struct k_work *button_pressed)
+static int button_init(void)
 {
 #if DT_NODE_EXISTS(BUTTON0)
 	int err;
@@ -95,8 +94,6 @@ static int button_init(struct k_work *button_pressed)
 		return err;
 	}
 
-	button_work = button_pressed;
-
 	gpio_init_callback(&gpio_cb, button_cb, BIT(BUTTON0_PIN));
 	gpio_add_callback(button_dev, &gpio_cb);
 #else
@@ -106,7 +103,7 @@ static int button_init(struct k_work *button_pressed)
 	return 0;
 }
 
-int board_init(struct k_work *button_pressed)
+int board_init(void)
 {
 	int err;
 
@@ -115,7 +112,7 @@ int board_init(struct k_work *button_pressed)
 		return err;
 	}
 
-	return button_init(button_pressed);
+	return button_init();
 }
 
 void board_led_set(bool val)
@@ -123,12 +120,4 @@ void board_led_set(bool val)
 #if DT_NODE_EXISTS(LED0)
 	gpio_pin_set(led_dev, LED0_PIN, val);
 #endif
-}
-
-void board_output_number(bt_mesh_output_action_t action, uint32_t number)
-{
-}
-
-void board_prov_complete(void)
-{
 }
