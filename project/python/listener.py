@@ -22,7 +22,8 @@ bucket = "Weather Data"
 client = InfluxDBClient(url=url, token=token, org=org)
 write_api = client.write_api(write_options=SYNCHRONOUS)
 
-# Format of data will come in as: {"UUID":X, "Time":X, "Fields":{ "Temperature":X, etc}}
+sensor_fields = ["Node", "Temperature", "Humidity", "Pressure", "VOC", "CO2", "PM10"]
+# Format of data will come in as: {"UUID":X, "Time":X, "Measurements":{ "Temperature":X, etc}}
 data = {}
 # UUID to node mapping
 nodes = {}
@@ -53,7 +54,7 @@ class SerialPort(QThread):
                                 # Data is sent off to dash board as soon as its read data should 
                                 # come every 5 minutes by default but not necessarily
                                 point_data = {
-                                        "measurement": data["UUID"],
+                                        "measurement": nodes[data[sensor_fields[0]]],
                                         "time": dt.utcnow(),
                                         "fields":data["Fields"]             
                                 }
@@ -67,7 +68,6 @@ class SerialPort(QThread):
                                 self.port = None
                                 break
                         time.sleep(0.01)
-                        
 '''
 class GUI(QMainWindow):
         # Main GUI class
@@ -134,3 +134,11 @@ if __name__ == "__main__":
                 loop.run_forever()
         sys.exit(app.exec_())
         '''
+
+        point_data = {
+                "measurement": nodes[data[sensor_fields[0]]],
+                "time": dt.utcnow(),
+                "fields":data["Fields"]             
+        }
+
+        write_api.write(bucket=bucket, org="o.roman@uqconnect.edu.au",record=point_data)
