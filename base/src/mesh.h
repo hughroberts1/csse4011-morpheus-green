@@ -21,11 +21,10 @@
 #define VOC 0x04
 #define CO2 0x05
 #define PM10 0x06
-#define ALL 0xFF
 
 #define PROVISION_WAIT_TIME 10
 
-#define NUM_DEVICES 7
+#define NUM_DEVICES 6
 
 #define SENSOR_CLIENT_MODEL 4
 
@@ -71,7 +70,7 @@ int bt_init(void);
 
 #define LIST_WAIT_TIME 2
 
-#define PRINT_SLEEP_TIME_MS 10
+#define PRINT_SLEEP_TIME_MS 20
 
 uint8_t bluetoothListen(void *args);
 

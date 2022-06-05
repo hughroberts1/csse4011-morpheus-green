@@ -44,9 +44,6 @@
 K_SEM_DEFINE(sem_unprov_beacon, 0, 1);
 K_SEM_DEFINE(sem_node_added, 0, 1);
 K_SEM_DEFINE(sem_list_nodes, 0, 1);
-K_SEM_DEFINE(sem_all, 0, 1);
-
-static uint16_t sample_period = DEFAULT_SAMPLE_PERIOD;
 
 static bool continuous_on = false;
 
@@ -74,11 +71,6 @@ K_MSGQ_DEFINE(ReceivedMessageQueue, sizeof(ReceivedMessageQueueItem),
 K_THREAD_DEFINE(receiveIncoming, RECEIVE_THREAD_STACK_SIZE, 
 	bluetoothListen, NULL, NULL, NULL, RECEIVE_THREAD_PRIORITY, 0, 0);
 
-void thread_continuous(void);
-
-K_THREAD_DEFINE(continuousSampling, CONTINUOUS_THREAD_STACK_SIZE, 
-	thread_continuous, NULL, NULL, NULL, CONTINUOUS_THREAD_PRIORITY, 0, 0);
-
 void thread_list_nodes(void);
 
 K_THREAD_DEFINE(list_nodes_thread, LIST_NODES_THREAD_STACK_SIZE, thread_list_nodes, NULL, NULL, NULL, LIST_NODES_THREAD_PRIORITY, 0, 0);
@@ -95,7 +87,6 @@ struct Map devices[NUM_DEVICES] = {
 	{.device_id = VOC, .device_name = "VOC"},
 	{.device_id = CO2, .device_name = "CO2"},
 	{.device_id = PM10, .device_name = "PM10"},
-	{.device_id = ALL, .device_name = "ALL"},
 };
 
 char* get_device_name(uint8_t device_id)
@@ -201,15 +192,16 @@ uint8_t bluetoothListen(void *args)
 		uint8_t device = rxMessage.device;
 		uint8_t board_type = rxMessage.board_type;
 		memcpy(uuid, &rxMessage.uuid, sizeof(uuid));
-
-		printk("Board: %s\n", board_type == THINGY ? "THINGY:52" : "PARTICLE ARGON");
-		// print out data
-		printk("UUID: ");
+		
+		printk("{UUID: ");
 		for (uint8_t i = 0; i < UUID_LENGTH; i++) {
 			printk("%02x", uuid[i]);
 		}
-		printk("\n");
-		printk("Time: %d Device: %d Data: %f\n\n", time, device, *((float *)(&data)));
+		printk(", time: %d", time);
+
+		printk(", reading: {%d: %f}}\n", device, *((float *)(&data)));
+
+		k_msleep(PRINT_SLEEP_TIME_MS);
 
 	}
 	return 0;
@@ -649,14 +641,6 @@ void thread_list_nodes(void)
 			printk("\n");
 			k_msleep(PRINT_SLEEP_TIME_MS);
 		}	
-	}
-}
-
-void thread_continuous(void)
-{
-
-	while (1) {
-		k_sem_take(&sem_all, K_FOREVER);
 	}
 }
 

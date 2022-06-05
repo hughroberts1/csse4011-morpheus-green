@@ -126,8 +126,7 @@ void sensor_get(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *ctx, struct
 				break;
 			case CO2: 
 				send_sensor_data(model, ctx, device, (double) scu_sensors_co2_get());
-			case ALL: 
-				send_sensor_all(model, ctx);
+				break;
 		}
 	}
 
