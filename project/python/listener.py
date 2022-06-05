@@ -6,12 +6,11 @@
 # Author: Hugh Robertson & Oliver Roman
 # Date: 13/05/2022
 ####################################################################################################
-import sys
-import serial
+import sys, serial, os, time, json
 import serial.tools.list_ports as list_ports
 from PyQt5.QtCore import Qt, pyqtSignal, QThread
-import json
-import influxdb_client, os, time
+from datetime import datetime as dt
+import influxdb_client
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 
@@ -19,11 +18,10 @@ token = os.environ.get("INFLUXDB_TOKEN")
 org = "o.roman@uqconnect.edu.au"
 url = "https://us-east-1-1.aws.cloud2.influxdata.com"
 bucket = "weatherData"
-client = influxdb_client.InfluxDBClient(url=url, token=token, org=org)
-
+client = InfluxDBClient(url=url, token=token, org=org)
 write_api = client.write_api(write_options=SYNCHRONOUS)
-sensor_fields = ["Temperature", "Humidity", "Pressure", "VOC", "CO2", "PM10"]
-data = {}
+
+sensor_fields = ["Node", "Temperature", "Humidity", "Pressure", "VOC", "CO2", "PM10"]
 
 
 #Thread that waits for data to appear on serial port and send it to GUI
@@ -51,14 +49,24 @@ class SerialPort(QThread):
                                 data = json.loads(line)
                                 # Data is sent off to dash board as soon as its read data should 
                                 # come every 5 minutes by default but not necessarily
-                                point = (Point("weatherData").field(sensor_fields[0]=data[sensor_fields[0]],\
-                                         sensor_fields[1]=data[sensor_fields[1]],\
-                                         sensor_fields[2]=data[sensor_fields[2]],\
-                                         sensor_fields[3]=data[sensor_fields[3]],\
-                                         sensor_fields[4]=data[sensor_fields[4]],\
-                                         sensor_fields[5]=data[sensor_fields[5]]))
+                                point_data = {
+                                                "measurement": "weatherData",
+                                                "tags": {
+                                                        sensor_fields[0]: data[sensor_fields[0]]
+                                                },
+                                                "time": dt.utcnow(),
+                                                "fields": {
+                                                        sensor_fields[1]:data[sensor_fields[1]],
+                                                        sensor_fields[2]:data[sensor_fields[2]],
+                                                        sensor_fields[3]:data[sensor_fields[3]],
+                                                        sensor_fields[4]:data[sensor_fields[4]],
+                                                        sensor_fields[5]:data[sensor_fields[5]],
+                                                        sensor_fields[6]:data[sensor_fields[6]]
+                                                }
+                                        }
+
                                 write_api.write(bucket=bucket, org="o.roman@uqconnect.edu.au",\
-                                                record=point)
+                                                record=point_data)
                                 self.newData.emit(line)
                         except serial.SerialException:
                                 print("Couldn't read serial")
@@ -67,7 +75,7 @@ class SerialPort(QThread):
                                 break
                         time.sleep(0.01)
 
-
+'''
 class GUI(QMainWindow):
         # Main GUI class
         def __init__(self, parent=None):
@@ -120,9 +128,9 @@ class GUI(QMainWindow):
                 self.graphicsView.plot(x_dataKal, y_dataKal, name="Kalman", pen=pen, symbol='+',\
                                        symbolSize=30, symbolBrush=('r'))
 
-
+'''
 if __name__ == "__main__":
-        
+        '''
         app = QApplication(sys.argv)
         loop = QEventLoop(app)
         MainWindow = QtWidgets.QMainWindow()
@@ -132,3 +140,24 @@ if __name__ == "__main__":
         with loop: 
                 loop.run_forever()
         sys.exit(app.exec_())
+        '''
+
+        # Data is sent off to dash board as soon as its read data should 
+        # come every 5 minutes by default but not necessarily
+        point_data = {
+                        "measurement": "weatherData",
+                        "tags": {
+                                sensor_fields[0]: "A"
+                        },
+                        "time": dt.utcnow(),
+                        "fields": {
+                                sensor_fields[1]:21,
+                                sensor_fields[2]:21,
+                                sensor_fields[3]:21,
+                                sensor_fields[4]:21,
+                                sensor_fields[5]:21,
+                                sensor_fields[6]:21
+                        }
+                }
+
+        write_api.write(bucket=bucket, org="o.roman@uqconnect.edu.au",record=point_data)
