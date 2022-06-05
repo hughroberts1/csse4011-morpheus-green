@@ -87,7 +87,8 @@ if __name__ == "__main__":
         model2.fit(X_train, y_train)
         y_predict = model2.predict(X_test)
         print("Accuracy:",metrics.accuracy_score(y_test, y_predict))
-
+        feature_imp = pd.Series(model2.feature_importances_,index=features)
+        print(feature_imp)
 
         plt.figure()
         plt.plot(range(1,40), scores)
