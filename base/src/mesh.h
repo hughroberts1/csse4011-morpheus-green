@@ -37,7 +37,7 @@
 
 #define UUID_LENGTH 16
 
-#define RECEIVED_QUEUE_LENGTH 32
+#define RECEIVED_QUEUE_LENGTH 100
 #define RECEIVED_QUEUE_ALIGNMENT 32
 
 
@@ -56,7 +56,8 @@ void provision(void);
 
 int sensor_request(uint8_t device);
 
-int sensor_request_all(void);
+int sensor_continuous_on(void);
+int sensor_continuous_off(void);
 
 int list_nodes(void);
 
@@ -64,17 +65,15 @@ int bt_init(void);
 
 #define RECEIVE_THREAD_STACK_SIZE 500
 #define RECEIVE_THREAD_PRIORITY 5
-
+#define CONTINUOUS_THREAD_STACK_SIZE 1024
+#define CONTINUOUS_THREAD_PRIORITY 2
 #define LIST_NODES_THREAD_STACK_SIZE 500
 #define LIST_NODES_THREAD_PRIORITY 5
 
 #define LIST_WAIT_TIME 2
-
 #define PRINT_SLEEP_TIME_MS 20
 
 uint8_t bluetoothListen(void *args);
 
 #define DEFAULT_SAMPLE_PERIOD 2
 
-#define CONTINUOUS_THREAD_STACK_SIZE 500
-#define CONTINUOUS_THREAD_PRIORITY 5

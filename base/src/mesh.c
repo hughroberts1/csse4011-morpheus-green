@@ -45,7 +45,7 @@ K_SEM_DEFINE(sem_unprov_beacon, 0, 1);
 K_SEM_DEFINE(sem_node_added, 0, 1);
 K_SEM_DEFINE(sem_list_nodes, 0, 1);
 
-static bool continuous_on = false;
+static uint32_t sampling_period = DEFAULT_SAMPLE_PERIOD;
 
 static const uint16_t net_idx = 0;
 static const uint16_t app_idx = 0;
@@ -73,6 +73,8 @@ K_THREAD_DEFINE(receiveIncoming, RECEIVE_THREAD_STACK_SIZE,
 
 void thread_list_nodes(void);
 
+uint8_t continuous_on = 0; 
+
 K_THREAD_DEFINE(list_nodes_thread, LIST_NODES_THREAD_STACK_SIZE, thread_list_nodes, NULL, NULL, NULL, LIST_NODES_THREAD_PRIORITY, 0, 0);
 
 struct Map {
@@ -88,6 +90,23 @@ struct Map devices[NUM_DEVICES] = {
 	{.device_id = CO2, .device_name = "CO2"},
 	{.device_id = PM10, .device_name = "PM10"},
 };
+
+void continuous_sampling(void *argv)
+{
+	while (1) {
+		while (continuous_on == 1) {
+			for (uint8_t device = 0; device < NUM_DEVICES; device++) {
+				uint8_t device_id = devices[device].device_id;
+				sensor_request(device_id);
+				k_msleep(500);
+			}
+			k_msleep(1000);
+		}
+		k_msleep(1);
+	}
+}
+
+K_THREAD_DEFINE(cont_sampling_thread, CONTINUOUS_THREAD_STACK_SIZE, continuous_sampling, NULL, NULL, NULL, CONTINUOUS_THREAD_PRIORITY, 0, 0);
 
 char* get_device_name(uint8_t device_id)
 {
@@ -153,7 +172,7 @@ static struct bt_mesh_health_cli health_cli = {
 static int sensor_status(struct bt_mesh_model *model, 
 				struct bt_mesh_msg_ctx *ctx, 
 				struct net_buf_simple *buf)
-{
+{	
 	uint16_t addr = ctx->addr;
 	struct bt_mesh_cdb_node *node = bt_mesh_cdb_node_get(addr);
 
@@ -173,7 +192,7 @@ static int sensor_status(struct bt_mesh_model *model,
 	while (k_msgq_put(&ReceivedMessageQueue, &rxMessage, K_NO_WAIT) != 0) {
 		k_msgq_purge(&ReceivedMessageQueue);
 	}
-
+	
 	return 0;
 }
 
@@ -261,10 +280,9 @@ int sensor_request(uint8_t device)
 	};
 
 	if (ctx.app_idx == BT_MESH_KEY_UNUSED) {
-		if (!continuous_on) {
-			printk("The Generic OnOff Client must be bound to a key before "
+		printk("The Generic OnOff Client must be bound to a key before "
 		       "sending.\n");
-		}
+
 		return -ENOENT;
 	}
 	uint32_t currentTime = k_uptime_get_32();
@@ -276,17 +294,21 @@ int sensor_request(uint8_t device)
 	net_buf_simple_add_le32(&buf, currentTime);
 	net_buf_simple_add_u8(&buf, device);
 
-	if (!continuous_on) {
-		printk("Sending request for device %d (%s) at system time %d\n", device, get_device_name(device),  currentTime);
-	}
+	//printk("Sending request for device %d (%s) at system time %d\n", device, get_device_name(device),  currentTime);
 	
 	return bt_mesh_model_send(&models[SENSOR_CLIENT_MODEL], &ctx, &buf, NULL, NULL);
 }
 
-int sensor_request_all(void)
+int sensor_continuous_on(void)
 {
-	
-	return 0;
+	continuous_on = 1; 
+	return 0; 
+}
+
+int sensor_continuous_off(void)
+{
+	continuous_on = 0; 
+	return 0; 
 }
 
 static void configure_self(struct bt_mesh_cdb_node *self)
