@@ -23,13 +23,21 @@
 
 #define SENSOR_CLIENT_MODEL 4
 
+#define GEN_ONOFF_CLIENT_MODEL 5
+
 #define SENSOR_STATUS BT_MESH_MODEL_OP_2(0x00, 0x52)
 #define SENSOR_GET BT_MESH_MODEL_OP_2(0x82, 0x31) 
+
+#define MAX_NODES 10
 
 #define UUID_LENGTH 16
 
 #define RECEIVED_QUEUE_LENGTH 32
 #define RECEIVED_QUEUE_ALIGNMENT 32
+
+
+#define OP_ONOFF_GET       BT_MESH_MODEL_OP_2(0x82, 0x01)
+#define OP_ONOFF_STATUS    BT_MESH_MODEL_OP_2(0x82, 0x04)
 
 typedef struct {
 	uint8_t uuid[16];
@@ -42,9 +50,14 @@ void provision(void);
 
 int sensor_request(uint8_t device);
 
+int list_nodes(void);
+
 int bt_init(void);
 
 #define RECEIVE_THREAD_STACK_SIZE 500
 #define RECEIVE_THREAD_PRIORITY 5
+
+#define LIST_NODES_THREAD_STACK_SIZE 500
+#define LIST_NODES_THREAD_PRIORITY 5
 
 uint8_t bluetoothListen(void *args);

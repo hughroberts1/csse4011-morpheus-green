@@ -43,6 +43,7 @@
 
 K_SEM_DEFINE(sem_unprov_beacon, 0, 1);
 K_SEM_DEFINE(sem_node_added, 0, 1);
+K_SEM_DEFINE(sem_list_nodes, 0, 1);
 
 static const uint16_t net_idx = 0;
 static const uint16_t app_idx = 0;
@@ -59,6 +60,11 @@ K_MSGQ_DEFINE(ReceivedMessageQueue, sizeof(ReceivedMessageQueueItem),
 // initialise thread for processing incoming message
 K_THREAD_DEFINE(receiveIncoming, RECEIVE_THREAD_STACK_SIZE, 
 	bluetoothListen, NULL, NULL, NULL, RECEIVE_THREAD_PRIORITY, 0, 0);
+
+
+void thread_list_nodes(void);
+
+K_THREAD_DEFINE(list_nodes_thread, LIST_NODES_THREAD_STACK_SIZE, thread_list_nodes, NULL, NULL, NULL, LIST_NODES_THREAD_PRIORITY, 0, 0);
 
 struct Map {
 	uint8_t device_id; 
@@ -192,6 +198,25 @@ static const struct bt_mesh_model_op sensor_cli_op[] = {
 	BT_MESH_MODEL_OP_END,
 };
 
+static struct bt_mesh_cdb_node* activeNodes[MAX_NODES];
+static uint8_t numNodesActive = 0; 
+
+static void gen_onoff_status(struct bt_mesh_model *model,
+			     struct bt_mesh_msg_ctx *ctx,
+			     struct net_buf_simple *buf)
+{
+	uint8_t present = net_buf_simple_pull_u8(buf);
+
+	activeNodes[numNodesActive++] = bt_mesh_cdb_node_get(ctx->addr);
+
+	k_sem_give(&sem_list_nodes);
+}
+
+static const struct bt_mesh_model_op gen_onoff_cli_op[] = {
+	{OP_ONOFF_STATUS, 1, gen_onoff_status},
+	BT_MESH_MODEL_OP_END,
+};
+
 static struct bt_mesh_model models[] = {
 	BT_MESH_MODEL_CFG_SRV,
 	BT_MESH_MODEL_CFG_CLI(&cfg_cli),
@@ -199,6 +224,9 @@ static struct bt_mesh_model models[] = {
 	BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
 
 	BT_MESH_MODEL(BT_MESH_MODEL_ID_SENSOR_CLI, sensor_cli_op, NULL, NULL),
+
+	BT_MESH_MODEL(BT_MESH_MODEL_ID_GEN_ONOFF_CLI, gen_onoff_cli_op, NULL,
+		      NULL),
 };
 
 static struct bt_mesh_elem elements[] = {
@@ -271,9 +299,15 @@ static void configure_self(struct bt_mesh_cdb_node *self)
 		return;
 	}
 
+	/* Bind the client models */
+
 	err = bt_mesh_cfg_mod_app_bind(self->net_idx, self->addr, self->addr,
 				       app_idx, BT_MESH_MODEL_ID_SENSOR_CLI,
 				       &status);
+
+	err = bt_mesh_cfg_mod_app_bind(self->net_idx, self->addr, self->addr, 
+						app_idx, BT_MESH_MODEL_ID_GEN_ONOFF_CLI, 
+						&status);
 
 	if (err || status) {
 		printk("Failed to bind app-key (err %d, status %d)\n", err,
@@ -381,7 +415,6 @@ static void configure_node(struct bt_mesh_cdb_node *node)
 
 	printk("Configuration complete\n");
 }
-
 
 static uint8_t check_unconfigured(struct bt_mesh_cdb_node *node, void *data)
 {
@@ -530,6 +563,55 @@ static void bt_ready(int err)
 		return;
 	} else {
 		printk("Provisioning completed\n");
+	}
+}
+
+static int gen_onoff_send(void)
+{
+	struct bt_mesh_msg_ctx ctx = {
+		.app_idx = models[GEN_ONOFF_CLIENT_MODEL].keys[0], /* Use the bound key */
+		.addr = BT_MESH_ADDR_ALL_NODES,
+		.send_ttl = BT_MESH_TTL_DEFAULT,
+	};
+
+	if (ctx.app_idx == BT_MESH_KEY_UNUSED) {
+		printk("The Generic OnOff Client must be bound to a key before "
+		       "sending.\n");
+		return -ENOENT;
+	}
+
+	BT_MESH_MODEL_BUF_DEFINE(buf, OP_ONOFF_GET, 1);
+	bt_mesh_model_msg_init(&buf, OP_ONOFF_GET);
+
+	net_buf_simple_add_u8(&buf, 0xFF);
+
+	printk("Sending a ping\n");
+
+	return bt_mesh_model_send(&models[GEN_ONOFF_CLIENT_MODEL], &ctx, &buf, NULL, NULL);
+}
+
+int list_nodes(void)
+{
+	gen_onoff_send();
+	numNodesActive = 0; 
+	return 0;
+}
+
+void thread_list_nodes(void)
+{
+	while (1) {
+
+		k_sem_take(&sem_list_nodes, K_FOREVER);
+
+		printk("Number of active nodes: %d\n", numNodesActive);
+		for (uint8_t i = 0; i < numNodesActive; i++) {
+			printk("Node at: ");
+			for (uint8_t j = 0; j < UUID_LENGTH; j++) {
+				printk("%02x", activeNodes[i]->uuid[j]);
+			}
+			printk("\n");
+		}
+	
 	}
 }
 

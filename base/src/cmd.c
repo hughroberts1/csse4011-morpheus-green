@@ -41,12 +41,20 @@ static int cmd_temperature(const struct shell *, size_t, char **);
 static int cmd_voc(const struct shell *, size_t, char **);
 static int cmd_co2(const struct shell *, size_t, char **);
 
-SHELL_CMD_REGISTER(pressure, NULL, "read pressure", cmd_pressure);
-SHELL_CMD_REGISTER(humidity, NULL, "read humidity", cmd_humidity);
-SHELL_CMD_REGISTER(temperature, NULL, "read temperature", cmd_temperature);
-SHELL_CMD_REGISTER(voc, NULL, "read voc", cmd_voc);
-SHELL_CMD_REGISTER(co2, NULL, "read co2", cmd_co2);
+static int cmd_list_nodes(const struct shell *, size_t, char **);
 
+SHELL_CMD_REGISTER(pressure, NULL, "Read pressure from all nodes", cmd_pressure);
+SHELL_CMD_REGISTER(humidity, NULL, "Read humidity from all nodes", cmd_humidity);
+SHELL_CMD_REGISTER(temperature, NULL, "Read temperature from all nodes", cmd_temperature);
+SHELL_CMD_REGISTER(voc, NULL, "Read VOC from all nodes", cmd_voc);
+SHELL_CMD_REGISTER(co2, NULL, "Read CO2 from all nodes", cmd_co2);
+
+SHELL_CMD_REGISTER(list_nodes, NULL, "List all nodes currently connected to mesh network", cmd_list_nodes);
+
+static int cmd_list_nodes(const struct shell *shell, size_t argc, char **argv)
+{
+	return list_nodes();
+}
 
 static int cmd_pressure(const struct shell *shell, size_t argc, char **argv) 
 {
