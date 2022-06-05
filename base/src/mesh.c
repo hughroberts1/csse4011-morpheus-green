@@ -44,9 +44,6 @@
 K_SEM_DEFINE(sem_unprov_beacon, 0, 1);
 K_SEM_DEFINE(sem_node_added, 0, 1);
 K_SEM_DEFINE(sem_list_nodes, 0, 1);
-K_SEM_DEFINE(sem_all, 0, 1);
-
-static uint16_t sample_period = DEFAULT_SAMPLE_PERIOD;
 
 static bool continuous_on = false;
 
@@ -73,11 +70,6 @@ K_MSGQ_DEFINE(ReceivedMessageQueue, sizeof(ReceivedMessageQueueItem),
 // initialise thread for processing incoming message
 K_THREAD_DEFINE(receiveIncoming, RECEIVE_THREAD_STACK_SIZE, 
 	bluetoothListen, NULL, NULL, NULL, RECEIVE_THREAD_PRIORITY, 0, 0);
-
-void thread_continuous(void);
-
-K_THREAD_DEFINE(continuousSampling, CONTINUOUS_THREAD_STACK_SIZE, 
-	thread_continuous, NULL, NULL, NULL, CONTINUOUS_THREAD_PRIORITY, 0, 0);
 
 void thread_list_nodes(void);
 
@@ -649,14 +641,6 @@ void thread_list_nodes(void)
 			printk("\n");
 			k_msleep(PRINT_SLEEP_TIME_MS);
 		}	
-	}
-}
-
-void thread_continuous(void)
-{
-
-	while (1) {
-		k_sem_take(&sem_all, K_FOREVER);
 	}
 }
 

@@ -14,7 +14,6 @@
 #define REQUEST 0xFF
 #define RESPONSE 0xAF
 
-#define ALL 0x00
 #define TEMPERATURE 0x01
 #define PRESSURE 0x02
 #define HUMIDITY 0x03

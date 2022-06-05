@@ -19,7 +19,6 @@
 #define HUMIDITY 0x03
 #define VOC 0x04
 #define CO2 0x05
-#define ALL 0xFF
 
 #define NUM_DEVICES 5
 
