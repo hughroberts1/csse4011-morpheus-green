@@ -87,7 +87,6 @@ struct Map devices[NUM_DEVICES] = {
 	{.device_id = VOC, .device_name = "VOC"},
 	{.device_id = CO2, .device_name = "CO2"},
 	{.device_id = PM10, .device_name = "PM10"},
-	{.device_id = ALL, .device_name = "ALL"},
 };
 
 char* get_device_name(uint8_t device_id)
@@ -193,15 +192,16 @@ uint8_t bluetoothListen(void *args)
 		uint8_t device = rxMessage.device;
 		uint8_t board_type = rxMessage.board_type;
 		memcpy(uuid, &rxMessage.uuid, sizeof(uuid));
-
-		printk("Board: %s\n", board_type == THINGY ? "THINGY:52" : "PARTICLE ARGON");
-		// print out data
-		printk("UUID: ");
+		
+		printk("{UUID: ");
 		for (uint8_t i = 0; i < UUID_LENGTH; i++) {
 			printk("%02x", uuid[i]);
 		}
-		printk("\n");
-		printk("Time: %d Device: %d Data: %f\n\n", time, device, *((float *)(&data)));
+		printk(", time: %d", time);
+
+		printk(", reading: {%d: %f}}\n", device, *((float *)(&data)));
+
+		k_msleep(PRINT_SLEEP_TIME_MS);
 
 	}
 	return 0;
