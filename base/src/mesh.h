@@ -62,4 +62,6 @@ int bt_init(void);
 
 #define LIST_WAIT_TIME 2
 
+#define PRINT_SLEEP_TIME_MS 10
+
 uint8_t bluetoothListen(void *args);

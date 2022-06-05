@@ -608,11 +608,12 @@ void thread_list_nodes(void)
 
 		printk("Number of active nodes: %d\n", numNodesActive);
 		for (uint8_t i = 0; i < numNodesActive; i++) {
-			printk("Node at: ");
+			printk("Node Addr %d at: ", activeNodes[i]->addr);
 			for (uint8_t j = 0; j < UUID_LENGTH; j++) {
 				printk("%02x", activeNodes[i]->uuid[j]);
 			}
 			printk("\n");
+			k_msleep(PRINT_SLEEP_TIME_MS);
 		}	
 	}
 }
