@@ -41,8 +41,11 @@ static int cmd_temperature(const struct shell *, size_t, char **);
 static int cmd_voc(const struct shell *, size_t, char **);
 static int cmd_co2(const struct shell *, size_t, char **);
 static int cmd_pm10(const struct shell *, size_t, char **);
+static int cmd_all(const struct shell *, size_t, char **);
 
 static int cmd_list_nodes(const struct shell *, size_t, char **);
+
+static int cmd_all_nodes(const struct shell *, size_t, char **);
 
 SHELL_CMD_REGISTER(pressure, NULL, "Read pressure from all nodes", cmd_pressure);
 SHELL_CMD_REGISTER(humidity, NULL, "Read humidity from all nodes", cmd_humidity);
@@ -50,8 +53,11 @@ SHELL_CMD_REGISTER(temperature, NULL, "Read temperature from all nodes", cmd_tem
 SHELL_CMD_REGISTER(voc, NULL, "Read VOC from all nodes", cmd_voc);
 SHELL_CMD_REGISTER(co2, NULL, "Read CO2 from all nodes", cmd_co2);
 SHELL_CMD_REGISTER(pm10, NULL, "Read PM10 from all nodes", cmd_pm10);
+SHELL_CMD_REGISTER(all, NULL, "Read all sensors a node has", cmd_all);
 
 SHELL_CMD_REGISTER(list_nodes, NULL, "List all nodes currently connected to mesh network", cmd_list_nodes);
+
+SHELL_CMD_REGISTER(all_nodes, NULL, "Continuously request all nodes data", cmd_all_nodes);
 
 static int cmd_list_nodes(const struct shell *shell, size_t argc, char **argv)
 {
@@ -73,16 +79,27 @@ static int cmd_temperature(const struct shell *shell, size_t argc, char **argv)
 	return sensor_request(TEMPERATURE);
 }
 
-static int cmd_voc(const struct shell *shell, size_t argc, char **argv) {
-
+static int cmd_voc(const struct shell *shell, size_t argc, char **argv) 
+{
 	return sensor_request(VOC);
 }
 
-static int cmd_co2(const struct shell *shell, size_t argc, char **argv) {
-
+static int cmd_co2(const struct shell *shell, size_t argc, char **argv) 
+{
 	return sensor_request(CO2);
 }
 
-static int cmd_pm10(const struct shell *shell, size_t argc, char **argv) {
+static int cmd_pm10(const struct shell *shell, size_t argc, char **argv) 
+{
 	return sensor_request(PM10);
+}
+
+static int cmd_all(const struct shell *shell, size_t argc, char **argv)
+{
+	return sensor_request(ALL);
+}
+
+static int cmd_all_nodes(const struct shell *shell, size_t argc, char **argv) 
+{
+	return sensor_request_all(); 
 }

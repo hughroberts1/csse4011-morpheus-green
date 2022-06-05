@@ -62,10 +62,11 @@ static int send_sensor_data(struct bt_mesh_model *model, struct bt_mesh_msg_ctx 
 {
 	if (bt_mesh_is_provisioned()) {
 
-		BT_MESH_MODEL_BUF_DEFINE(buf, SENSOR_STATUS, 1 + 4 + 1 + 4);
+		BT_MESH_MODEL_BUF_DEFINE(buf, SENSOR_STATUS, 1 + 1 + 4 + 1 + 4);
 		bt_mesh_model_msg_init(&buf, SENSOR_STATUS);
 
 		net_buf_simple_add_u8(&buf, RESPONSE);
+		net_buf_simple_add_u8(&buf, ARGON);
 		net_buf_simple_add_le32(&buf, currentTime);
 		net_buf_simple_add_u8(&buf, device);
 		net_buf_simple_add_le32(&buf, *((uint32_t*)(&data)));
@@ -130,7 +131,7 @@ static int onoff_status_send(struct bt_mesh_model *model,
 	BT_MESH_MODEL_BUF_DEFINE(buf, OP_ONOFF_STATUS, 1);
 	bt_mesh_model_msg_init(&buf, OP_ONOFF_STATUS);
 
-	net_buf_simple_add_u8(&buf, 0xFF);
+	net_buf_simple_add_u8(&buf, ARGON);
 
 	return bt_mesh_model_send(model, ctx, &buf, NULL, NULL);
 }

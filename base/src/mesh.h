@@ -8,6 +8,10 @@
  * @copyright Copyright (c) 2022
  * 
  */
+
+#define THINGY 0x01
+#define ARGON 0x02
+
 #define REQUEST 0xFF
 #define RESPONSE 0xAF
 
@@ -17,10 +21,11 @@
 #define VOC 0x04
 #define CO2 0x05
 #define PM10 0x06
+#define ALL 0xFF
 
 #define PROVISION_WAIT_TIME 10
 
-#define NUM_DEVICES 6
+#define NUM_DEVICES 7
 
 #define SENSOR_CLIENT_MODEL 4
 
@@ -42,6 +47,7 @@
 
 typedef struct {
 	uint8_t uuid[16];
+	uint8_t board_type; 
 	uint32_t time; 
 	uint8_t device; 
 	uint32_t data; 
@@ -50,6 +56,8 @@ typedef struct {
 void provision(void);
 
 int sensor_request(uint8_t device);
+
+int sensor_request_all(void);
 
 int list_nodes(void);
 
@@ -66,3 +74,8 @@ int bt_init(void);
 #define PRINT_SLEEP_TIME_MS 10
 
 uint8_t bluetoothListen(void *args);
+
+#define DEFAULT_SAMPLE_PERIOD 2
+
+#define CONTINUOUS_THREAD_STACK_SIZE 500
+#define CONTINUOUS_THREAD_PRIORITY 5
