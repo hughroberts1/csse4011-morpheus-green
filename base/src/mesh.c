@@ -61,7 +61,6 @@ K_MSGQ_DEFINE(ReceivedMessageQueue, sizeof(ReceivedMessageQueueItem),
 K_THREAD_DEFINE(receiveIncoming, RECEIVE_THREAD_STACK_SIZE, 
 	bluetoothListen, NULL, NULL, NULL, RECEIVE_THREAD_PRIORITY, 0, 0);
 
-
 void thread_list_nodes(void);
 
 K_THREAD_DEFINE(list_nodes_thread, LIST_NODES_THREAD_STACK_SIZE, thread_list_nodes, NULL, NULL, NULL, LIST_NODES_THREAD_PRIORITY, 0, 0);
@@ -205,11 +204,9 @@ static void gen_onoff_status(struct bt_mesh_model *model,
 			     struct bt_mesh_msg_ctx *ctx,
 			     struct net_buf_simple *buf)
 {
-	uint8_t present = net_buf_simple_pull_u8(buf);
+	net_buf_simple_pull_u8(buf);
 
 	activeNodes[numNodesActive++] = bt_mesh_cdb_node_get(ctx->addr);
-
-	k_sem_give(&sem_list_nodes);
 }
 
 static const struct bt_mesh_model_op gen_onoff_cli_op[] = {
@@ -585,7 +582,7 @@ static int gen_onoff_send(void)
 
 	net_buf_simple_add_u8(&buf, 0xFF);
 
-	printk("Sending a ping\n");
+	printk("Sending a ping. Waiting for %d seconds for replies\n", LIST_WAIT_TIME);
 
 	return bt_mesh_model_send(&models[GEN_ONOFF_CLIENT_MODEL], &ctx, &buf, NULL, NULL);
 }
@@ -594,6 +591,7 @@ int list_nodes(void)
 {
 	gen_onoff_send();
 	numNodesActive = 0; 
+	k_sem_give(&sem_list_nodes);
 	return 0;
 }
 
@@ -602,6 +600,11 @@ void thread_list_nodes(void)
 	while (1) {
 
 		k_sem_take(&sem_list_nodes, K_FOREVER);
+		// now need to wait 2 seconds and print out what was collected in that time 
+
+		k_sleep(K_SECONDS(LIST_WAIT_TIME));
+
+		// finished sleeping, print out what we got
 
 		printk("Number of active nodes: %d\n", numNodesActive);
 		for (uint8_t i = 0; i < numNodesActive; i++) {
@@ -610,8 +613,7 @@ void thread_list_nodes(void)
 				printk("%02x", activeNodes[i]->uuid[j]);
 			}
 			printk("\n");
-		}
-	
+		}	
 	}
 }
 

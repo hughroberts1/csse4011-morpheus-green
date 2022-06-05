@@ -60,4 +60,6 @@ int bt_init(void);
 #define LIST_NODES_THREAD_STACK_SIZE 500
 #define LIST_NODES_THREAD_PRIORITY 5
 
+#define LIST_WAIT_TIME 2
+
 uint8_t bluetoothListen(void *args);
