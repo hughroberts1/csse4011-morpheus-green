@@ -44,12 +44,25 @@
 K_SEM_DEFINE(sem_unprov_beacon, 0, 1);
 K_SEM_DEFINE(sem_node_added, 0, 1);
 K_SEM_DEFINE(sem_list_nodes, 0, 1);
+K_SEM_DEFINE(sem_all, 0, 1);
+
+static uint16_t sample_period = DEFAULT_SAMPLE_PERIOD;
+
+static bool continuous_on = false;
 
 static const uint16_t net_idx = 0;
 static const uint16_t app_idx = 0;
 
 static uint16_t self_addr = 1, node_addr;
 static uint8_t node_uuid[UUID_LENGTH]; 
+
+typedef struct {
+	uint8_t board_type; 
+	struct bt_mesh_cdb_node* cdb_node; 
+} node;
+
+static node activeNodes[MAX_NODES];
+static uint8_t numNodesActive = 0; 
 
 struct k_msgq ReceivedMessageQueue; 
 
@@ -60,6 +73,11 @@ K_MSGQ_DEFINE(ReceivedMessageQueue, sizeof(ReceivedMessageQueueItem),
 // initialise thread for processing incoming message
 K_THREAD_DEFINE(receiveIncoming, RECEIVE_THREAD_STACK_SIZE, 
 	bluetoothListen, NULL, NULL, NULL, RECEIVE_THREAD_PRIORITY, 0, 0);
+
+void thread_continuous(void);
+
+K_THREAD_DEFINE(continuousSampling, CONTINUOUS_THREAD_STACK_SIZE, 
+	thread_continuous, NULL, NULL, NULL, CONTINUOUS_THREAD_PRIORITY, 0, 0);
 
 void thread_list_nodes(void);
 
@@ -77,6 +95,7 @@ struct Map devices[NUM_DEVICES] = {
 	{.device_id = VOC, .device_name = "VOC"},
 	{.device_id = CO2, .device_name = "CO2"},
 	{.device_id = PM10, .device_name = "PM10"},
+	{.device_id = ALL, .device_name = "ALL"},
 };
 
 char* get_device_name(uint8_t device_id)
@@ -148,12 +167,14 @@ static int sensor_status(struct bt_mesh_model *model,
 	struct bt_mesh_cdb_node *node = bt_mesh_cdb_node_get(addr);
 
 	net_buf_simple_pull_u8(buf);
+	uint8_t board_type = net_buf_simple_pull_u8(buf);
 	uint32_t time = net_buf_simple_pull_le32(buf);
 	uint8_t device = net_buf_simple_pull_u8(buf);
 	uint32_t data = net_buf_simple_pull_le32(buf);
 
 	ReceivedMessageQueueItem rxMessage; 
 	rxMessage.time = time;
+	rxMessage.board_type = board_type;
 	rxMessage.data = data;
 	rxMessage.device = device;
 	memcpy(rxMessage.uuid, node->uuid, sizeof(node->uuid));
@@ -178,8 +199,10 @@ uint8_t bluetoothListen(void *args)
 		uint32_t time = rxMessage.time;
 		uint32_t data = rxMessage.data;
 		uint8_t device = rxMessage.device;
+		uint8_t board_type = rxMessage.board_type;
 		memcpy(uuid, &rxMessage.uuid, sizeof(uuid));
 
+		printk("Board: %s\n", board_type == THINGY ? "THINGY:52" : "PARTICLE ARGON");
 		// print out data
 		printk("UUID: ");
 		for (uint8_t i = 0; i < UUID_LENGTH; i++) {
@@ -198,16 +221,16 @@ static const struct bt_mesh_model_op sensor_cli_op[] = {
 	BT_MESH_MODEL_OP_END,
 };
 
-static struct bt_mesh_cdb_node* activeNodes[MAX_NODES];
-static uint8_t numNodesActive = 0; 
-
 static void gen_onoff_status(struct bt_mesh_model *model,
 			     struct bt_mesh_msg_ctx *ctx,
 			     struct net_buf_simple *buf)
 {
-	net_buf_simple_pull_u8(buf);
+	uint8_t board_type = net_buf_simple_pull_u8(buf);
 
-	activeNodes[numNodesActive++] = bt_mesh_cdb_node_get(ctx->addr);
+	activeNodes[numNodesActive].board_type = board_type;
+	activeNodes[numNodesActive].cdb_node = bt_mesh_cdb_node_get(ctx->addr);
+
+	numNodesActive++;
 }
 
 static const struct bt_mesh_model_op gen_onoff_cli_op[] = {
@@ -246,8 +269,10 @@ int sensor_request(uint8_t device)
 	};
 
 	if (ctx.app_idx == BT_MESH_KEY_UNUSED) {
-		printk("The Generic OnOff Client must be bound to a key before "
+		if (!continuous_on) {
+			printk("The Generic OnOff Client must be bound to a key before "
 		       "sending.\n");
+		}
 		return -ENOENT;
 	}
 	uint32_t currentTime = k_uptime_get_32();
@@ -259,11 +284,18 @@ int sensor_request(uint8_t device)
 	net_buf_simple_add_le32(&buf, currentTime);
 	net_buf_simple_add_u8(&buf, device);
 
-	printk("Sending request for device %d (%s) at system time %d\n", device, get_device_name(device),  currentTime);
-
+	if (!continuous_on) {
+		printk("Sending request for device %d (%s) at system time %d\n", device, get_device_name(device),  currentTime);
+	}
+	
 	return bt_mesh_model_send(&models[SENSOR_CLIENT_MODEL], &ctx, &buf, NULL, NULL);
 }
 
+int sensor_request_all(void)
+{
+	
+	return 0;
+}
 
 static void configure_self(struct bt_mesh_cdb_node *self)
 {
@@ -609,13 +641,22 @@ void thread_list_nodes(void)
 
 		printk("Number of active nodes: %d\n", numNodesActive);
 		for (uint8_t i = 0; i < numNodesActive; i++) {
-			printk("Node Addr %d at: ", activeNodes[i]->addr);
+			printk("Node Addr %d at: ", activeNodes[i].cdb_node->addr);
 			for (uint8_t j = 0; j < UUID_LENGTH; j++) {
-				printk("%02x", activeNodes[i]->uuid[j]);
+				printk("%02x", activeNodes[i].cdb_node->uuid[j]);
 			}
+			printk(" %s", activeNodes[i].board_type == THINGY ? "THINGY:52" : "PARTICLE ARGON");
 			printk("\n");
 			k_msleep(PRINT_SLEEP_TIME_MS);
 		}	
+	}
+}
+
+void thread_continuous(void)
+{
+
+	while (1) {
+		k_sem_take(&sem_all, K_FOREVER);
 	}
 }
 

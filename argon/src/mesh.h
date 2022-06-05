@@ -9,6 +9,8 @@
  * 
  */
 
+#define ARGON 0x02
+
 #define REQUEST 0xFF
 #define RESPONSE 0xAF
 
