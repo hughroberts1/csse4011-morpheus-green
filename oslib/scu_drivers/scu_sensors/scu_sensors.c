@@ -58,7 +58,7 @@ static int samplingTime = SAMPLING_TIME_DEFAULT;
  */
 static void scu_process_lps22hb_sample(void)
 {
-
+        scu_power_management_on();
 	const struct device *dev = scu_sensors_init("LPS22HB");
 	struct sensor_value pressure;
 
@@ -81,6 +81,7 @@ static void scu_process_lps22hb_sample(void)
 	currentSensorData.pressure = sensor_value_to_double(&pressure);
 	printk("Pressure:%.1f kPa\n", currentSensorData.pressure);
 	k_mutex_unlock(&scuMutex);
+        scu_power_management_off();
 }
 #endif
 
@@ -91,6 +92,7 @@ static void scu_process_lps22hb_sample(void)
  */
 static void scu_process_hts221_sample(void)
 {
+        scu_power_management_on()
 	const struct device *dev = scu_sensors_init("HTS221");
 	struct sensor_value temp, hum;
 
@@ -120,6 +122,7 @@ static void scu_process_hts221_sample(void)
 	printk("Temperature:%.1f C & Relative Humidity:%.1f%%\n", currentSensorData.temperature,
 		currentSensorData.humidity);
 	k_mutex_unlock(&scuMutex);
+        scu_power_management_off();
 }
 #endif
 
@@ -129,7 +132,8 @@ static void scu_process_hts221_sample(void)
  * 
  */
 static void scu_process_lis2dh_sample(void)
-{
+{       
+        scu_power_management_on()
 	const struct device *dev = scu_sensors_init("LIS2DH");
 	struct sensor_value accel[3];
 	int err = sensor_sample_fetch(dev);
@@ -155,6 +159,7 @@ static void scu_process_lis2dh_sample(void)
 		       currentSensorData.acceleration[2]);
 	}
 	k_mutex_unlock(&scuMutex);
+        scu_power_management_off();
 }
 #endif
 
@@ -164,7 +169,8 @@ static void scu_process_lis2dh_sample(void)
  * 
  */
 static void scu_process_ccs811_sample(void)
-{
+{       
+scu_power_management_on()
 	const struct device *dev = scu_sensors_init("CCS811");
 	struct sensor_value tvoc, co2;
 	int err = 0;
@@ -547,7 +553,6 @@ const struct device* scu_sensors_init(char *devName)
 		return;
 	#endif
 
-	// Initialising the device
 	if (dev == NULL) {
 		printk("Could not get %s device\n", devName);
 		return;
@@ -564,7 +569,8 @@ const struct device* scu_sensors_init(char *devName)
 
 
 /**
- * @brief Set the scu sensors' sampling time between once per 5 seconds to once per 5 mins
+ * @brief Set the scu sensors' sampling time between once per 5 seconds to once per 5 mins the
+ *        sensors' power rails will be turned off when not needed to conserve power
  * 
  * @param newSampTime The sampling time to set on the device in seconds
  * @return int The error code

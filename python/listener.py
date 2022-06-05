@@ -22,10 +22,25 @@ bucket = "Weather Data"
 client = InfluxDBClient(url=url, token=token, org=org)
 write_api = client.write_api(write_options=SYNCHRONOUS)
 
-# Format of data will come in as: {"UUID":X, "Time":X, "Fields":{ "Temperature":X, etc}}
+# Format of data will come in as: {"UUID":X, "Time":X, "Reading":{ "Temperature":X, etc}}
 data = {}
-# UUID to node mapping
-nodes = {}
+
+# UUID to node mapping, any new nodes will need to be hardcode added here
+nodes = { 
+         "0x3E2F23DD6FA1B0A00000000000000000": "A"
+         "0x4450023F5FB84EAE0000000000000000": "B"
+         "0x36E2175949D1D4850000000000000000": "C"
+         "0xD684939C4E9ABD390000000000000000": "D"
+        }
+
+readings = {
+        "1" : "Temperature"
+        "2" : "Humidity"
+        "3" : "Pressure"
+        "4" : "VOC"
+        "5" : "CO2"
+        "6" : "PM10"
+}
 
 #Thread that waits for data to appear on serial port and send it to GUI
 class SerialPort(QThread):
@@ -52,10 +67,12 @@ class SerialPort(QThread):
                                 data = json.loads(line)
                                 # Data is sent off to dash board as soon as its read data should 
                                 # come every 5 minutes by default but not necessarily
+                                reading = {readings[data["Reading"].keys()[0]]:\
+                                           data["Readings"][data["Readings"].keys()[0]]}
                                 point_data = {
-                                        "measurement": data["UUID"],
+                                        "measurement": nodes[data["UUID"]],
                                         "time": dt.utcnow(),
-                                        "fields":data["Fields"]             
+                                        "fields": reading     
                                 }
 
                                 write_api.write(bucket=bucket, org="o.roman@uqconnect.edu.au",\

@@ -11,5 +11,11 @@
 
 /* Device Tree Macros */
 
+// Relevant Thingy52 power rails 
+//Controls everything except the CCS power
+#define VDD_NODE DT_NODELABEL(vdd_pwr)
+// Controls just the CCS power
+#define CCS_NODE DT_NODELABEL(ccs_pwr)
+
 
 #endif
