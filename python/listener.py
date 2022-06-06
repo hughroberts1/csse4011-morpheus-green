@@ -46,8 +46,8 @@ nodes = {
 
 readings = {
         "1" : "Temperature",
-        "2" : "Humidity",
-        "3" : "Pressure",
+        "2" : "Pressure",
+        "3" : "Humidity",
         "4" : "VOC",
         "5" : "CO2",
         "6" : "PM10"

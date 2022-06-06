@@ -9,8 +9,8 @@
  * 
  */
 
-#define THINGY 0x01
-#define ARGON 0x02
+#define THINGY 0xF0
+#define ARGON 0xF1
 
 #define REQUEST 0xFF
 #define RESPONSE 0xAF
@@ -75,5 +75,5 @@ int bt_init(void);
 
 uint8_t bluetoothListen(void *args);
 
-#define DEFAULT_SAMPLE_PERIOD 2
+#define DEFAULT_SAMPLE_PERIOD 1000
 

@@ -98,9 +98,10 @@ void continuous_sampling(void *argv)
 			for (uint8_t device = 0; device < NUM_DEVICES; device++) {
 				uint8_t device_id = devices[device].device_id;
 				sensor_request(device_id);
+				// wait 0.5 seconds before requesting next device
 				k_msleep(500);
 			}
-			k_msleep(1000);
+			k_msleep(sampling_period);
 		}
 		k_msleep(1);
 	}

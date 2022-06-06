@@ -9,7 +9,7 @@
  * 
  */
 
-#define ARGON 0x02
+#define ARGON 0x0F1
 
 #define REQUEST 0xFF
 #define RESPONSE 0xAF

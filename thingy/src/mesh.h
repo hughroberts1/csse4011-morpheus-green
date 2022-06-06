@@ -9,7 +9,7 @@
  * 
  */
 
-#define THINGY 0x01
+#define THINGY 0xF0
 
 #define REQUEST 0xFF
 #define RESPONSE 0xAF
