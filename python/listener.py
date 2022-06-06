@@ -22,23 +22,23 @@ bucket = "Weather Data"
 client = InfluxDBClient(url=url, token=token, org=org)
 write_api = client.write_api(write_options=SYNCHRONOUS)
 
-# Format of data will come in as: {"UUID":X, "Time":X, "Reading":{ "Temperature":X, etc}}
+# Format of data will come in as: {"UUID":X,"time":X,"reading":{ "Temperature":X, etc}}
 data = {}
 
 # UUID to node mapping, any new nodes will need to be hardcode added here
 nodes = { 
-         "0x3E2F23DD6FA1B0A00000000000000000": "A"
-         "0x4450023F5FB84EAE0000000000000000": "B"
-         "0x36E2175949D1D4850000000000000000": "C"
+         "0x3E2F23DD6FA1B0A00000000000000000": "A",
+         "0x4450023F5FB84EAE0000000000000000": "B",
+         "0x36E2175949D1D4850000000000000000": "C",
          "0xD684939C4E9ABD390000000000000000": "D"
         }
 
 readings = {
-        "1" : "Temperature"
-        "2" : "Humidity"
-        "3" : "Pressure"
-        "4" : "VOC"
-        "5" : "CO2"
+        "1" : "Temperature",
+        "2" : "Humidity",
+        "3" : "Pressure",
+        "4" : "VOC",
+        "5" : "CO2",
         "6" : "PM10"
 }
 
@@ -67,8 +67,8 @@ class SerialPort(QThread):
                                 data = json.loads(line)
                                 # Data is sent off to dash board as soon as its read data should 
                                 # come every 5 minutes by default but not necessarily
-                                reading = {readings[data["Reading"].keys()[0]]:\
-                                           data["Readings"][data["Readings"].keys()[0]]}
+                                reading = {readings[data["reading"].keys()[0]]:\
+                                           data["readings"][data["readings"].keys()[0]]}
                                 point_data = {
                                         "measurement": nodes[data["UUID"]],
                                         "time": dt.utcnow(),
@@ -137,10 +137,11 @@ class GUI(QMainWindow):
                                        symbolSize=30, symbolBrush=('b'))
                 self.graphicsView.plot(x_dataKal, y_dataKal, name="Kalman", pen=pen, symbol='+',\
                                        symbolSize=30, symbolBrush=('r'))
+'''
 
 '''
 if __name__ == "__main__":
-        '''
+        
         app = QApplication(sys.argv)
         loop = QEventLoop(app)
         MainWindow = QtWidgets.QMainWindow()
@@ -150,4 +151,31 @@ if __name__ == "__main__":
         with loop: 
                 loop.run_forever()
         sys.exit(app.exec_())
-        '''
+'''
+if __name__ == "__main__":
+        
+        
+        s = serial.Serial('/dev/ttyACM0')
+        while True:
+                        try:
+                                line = self.ser.readline().decode()
+                                data = json.loads(line)
+                                # Data is sent off to dash board as soon as its read data should 
+                                # come every 5 minutes by default but not necessarily
+                                reading = {readings[data["reading"].keys()[0]]:\
+                                           data["readings"][data["readings"].keys()[0]]}
+                                point_data = {
+                                        "measurement": nodes[data["UUID"]],
+                                        "time": dt.utcnow(),
+                                        "fields": reading     
+                                }
+
+                                write_api.write(bucket=bucket, org="o.roman@uqconnect.edu.au",\
+                                                record=point_data)
+                                self.newData.emit(line)
+                        except serial.SerialException:
+                                print("Couldn't read serial")
+                                self.ser.close()
+                                self.port = None
+                                break
+                        time.sleep(0.01)
