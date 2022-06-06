@@ -10,17 +10,17 @@ import sys, serial, os, time, json
 import serial.tools.list_ports as list_ports
 from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from datetime import datetime as dt
-#import influxdb_client
-#from influxdb_client import InfluxDBClient, Point, WritePrecision
-#from influxdb_client.client.write_api import SYNCHRONOUS
+import influxdb_client
+from influxdb_client import InfluxDBClient, Point, WritePrecision
+from influxdb_client.client.write_api import SYNCHRONOUS
 
-#token = os.environ.get("INFLUXDB_TOKEN")
-#print(token)
-#org = "o.roman@uqconnect.edu.au"
-#url = "https://us-east-1-1.aws.cloud2.influxdata.com"
-#bucket = "Weather Data"
-#client = InfluxDBClient(url=url, token=token, org=org)
-#write_api = client.write_api(write_options=SYNCHRONOUS)
+token = os.environ.get("INFLUXDB_TOKEN")
+print(token)
+org = "o.roman@uqconnect.edu.au"
+url = "https://us-east-1-1.aws.cloud2.influxdata.com"
+bucket = "Weather Data"
+client = InfluxDBClient(url=url, token=token, org=org)
+write_api = client.write_api(write_options=SYNCHRONOUS)
 
 # Format of data will come in as: {"UUID":X, "Time":X, "Reading":{ "Temperature":X, etc}}
 data = {}
@@ -104,6 +104,9 @@ def read_data():
                         }
 
             print(point_data)
+
+            write_api.write(bucket=bucket, org="o.roman@uqconnect.edu.au",\
+                record=point_data)
         except Exception as e: 
             print("Something went wrong", e)
 
