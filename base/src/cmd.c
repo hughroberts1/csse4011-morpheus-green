@@ -44,6 +44,7 @@ static int cmd_pm10(const struct shell *, size_t, char **);
 static int cmd_list_nodes(const struct shell *, size_t, char **);
 static int cmd_all_on(const struct shell *, size_t, char **);
 static int cmd_all_off(const struct shell *, size_t, char **);
+static int cmd_set_sample_period(const struct shell *, size_t, char **);
 
 SHELL_CMD_REGISTER(pressure, NULL, "Read pressure from all nodes", cmd_pressure);
 SHELL_CMD_REGISTER(humidity, NULL, "Read humidity from all nodes", cmd_humidity);
@@ -54,6 +55,7 @@ SHELL_CMD_REGISTER(pm10, NULL, "Read PM10 from all nodes", cmd_pm10);
 SHELL_CMD_REGISTER(list_nodes, NULL, "List all nodes currently connected to mesh network", cmd_list_nodes);
 SHELL_CMD_REGISTER(all_on, NULL, "Continuously request all nodes data", cmd_all_on);
 SHELL_CMD_REGISTER(all_off, NULL, "Turn off continuous sampling", cmd_all_off);
+SHELL_CMD_REGISTER(sample_period, NULL, "Set sample period of continuous sampling (seconds)", cmd_set_sample_period);
 
 
 
@@ -100,4 +102,9 @@ static int cmd_all_on(const struct shell *shell, size_t argc, char **argv)
 static int cmd_all_off(const struct shell *shell, size_t argc, char **argv)
 {
 	return sensor_continuous_off();
+}
+
+static int cmd_set_sample_period(const struct shell *shell, size_t argc, char **argv) 
+{
+	return set_sample_period(argc, argv);
 }

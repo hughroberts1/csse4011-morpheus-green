@@ -34,6 +34,8 @@
 #include <sys/util.h>
 #include <inttypes.h>
 #include <kernel.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "mesh.h"
 #include "board.h"
@@ -665,6 +667,19 @@ void thread_list_nodes(void)
 			k_msleep(PRINT_SLEEP_TIME_MS);
 		}	
 	}
+}
+
+int set_sample_period(size_t argc, char** argv) 
+{
+	int seconds = atoi(argv[1]);
+	if (seconds <= 2) {
+		seconds = 2;
+	} 
+	if (seconds >= 5 * 60) {
+		seconds = 5 * 60; 
+	}
+	sampling_period = 1000 * seconds; 
+	return 0; 
 }
 
 int bt_init(void)

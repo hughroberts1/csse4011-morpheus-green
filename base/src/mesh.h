@@ -59,6 +59,8 @@ int sensor_request(uint8_t device);
 int sensor_continuous_on(void);
 int sensor_continuous_off(void);
 
+int set_sample_period(size_t, char**);
+
 int list_nodes(void);
 
 int bt_init(void);
@@ -75,5 +77,5 @@ int bt_init(void);
 
 uint8_t bluetoothListen(void *args);
 
-#define DEFAULT_SAMPLE_PERIOD 1000
+#define DEFAULT_SAMPLE_PERIOD 5000
 
