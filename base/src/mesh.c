@@ -503,7 +503,6 @@ void provision(void)
 
         printk("Waiting for node to be added...\n");
         err = k_sem_take(&sem_node_added, K_SECONDS(PROVISION_WAIT_TIME));
-        printk("After sem take\n");
         if (err == -EAGAIN) {
             printk("Timeout waiting for node to be added\n");
             continue;

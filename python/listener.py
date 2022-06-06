@@ -13,6 +13,11 @@ from datetime import datetime as dt
 import influxdb_client
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
+import threading
+import re
+import argparse
+from datetime import datetime as dt
+import csv
 
 token = os.environ.get("INFLUXDB_TOKEN")
 print(token)
@@ -22,36 +27,11 @@ bucket = "Weather Data"
 client = InfluxDBClient(url=url, token=token, org=org)
 write_api = client.write_api(write_options=SYNCHRONOUS)
 
-# Format of data will come in as: {"UUID":X,"time":X,"reading":{ "Temperature":X, etc}}
-data = {}
-
-import serial
-import threading
-import re
-import argparse
-from datetime import datetime as dt
-import sys, serial, os, time, json
-
 # Format of data will come in as: {"UUID":X, "Time":X, "Reading":{ "Temperature":X, etc}}
 data = {}
 
-# UUID to node mapping, any new nodes will need to be hardcode added here
-nodes = { 
-         "3e2f23dd6fa1b0a00000000000000000": "A", 
-         "4450023f5fb84eae0000000000000000": "B", 
-         "36e2175949d1d4850000000000000000": "C",
-         "d684939c4e9abd390000000000000000": "D"
-        }
-
-
-readings = {
-        "1" : "Temperature",
-        "2" : "Pressure",
-        "3" : "Humidity",
-        "4" : "VOC",
-        "5" : "CO2",
-        "6" : "PM10"
-}
+nodes = {}
+readings = {}
 
 # 7-bit C1 ANSI sequences
 ansi_escape = re.compile(r'''
@@ -73,51 +53,33 @@ def escape_ansi(line):
     ansi_escape =re.compile(r'(\x9B|\x1B\[)[0-?]*[ -\/]*[@-~]')
     return ansi_escape.sub('', line)
 
-ser = serial.Serial("/dev/ttyACM0")
 
 def read_data(): 
     while True: 
         line = ser.readline().decode('utf-8').replace("base:~$", "").strip('\n\r')
-
         result = ansi_escape.sub('', line)
-
         try: 
                 data = json.loads(result)
-
                 reading = data["reading"]
-
                 device_id = list(reading.keys())[0]
-
                 device_name = readings[device_id]
-
                 measurement = reading[device_id]
-
                 measurement = float(reading[device_id])
-            
-
                 reading2 = {device_name: measurement}
-
                 uuid = data["UUID"]
-
-
                 point_data = {"measurement": nodes[uuid],
                                 "time": dt.utcnow(),
                                 "fields": reading2     
                                 }
 
                 print(point_data)
-
                 write_api.write(bucket=bucket, org="o.roman@uqconnect.edu.au",record=point_data)
         except Exception as e: 
-            #print("\n\n")
-            #print("Something went wrong", e)
-            #print("\n")
             pass
 
-def main(args): 
-    
+def main(): 
 
-    p1 = threading.Thread(target=read_data, args=())
+    p1 = threading.Thread(target=read_data)
     p1.start()
 
     while True: 
@@ -132,11 +94,40 @@ def main(args):
 
 if __name__ == "__main__": 
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-v', action='store_true', dest='verbose', required=False)
-    parser.add_argument('-H', action='store', dest='host', required=False, default="localhost")
-    parser.add_argument('-p', action='store', dest='port', type=int, required=False, default="1883")
-    parser.add_argument('-t', action='store', dest='topic', required=False)
-    args = parser.parse_args()
+    if (len(sys.argv) == 1): 
+        print("Provide a serial port")
+        sys.exit(-1)
+    elif (len(sys.argv) == 2): 
+        serialPort = sys.argv[1]
+    else: 
+        sys.exit(-2)
 
-    main(args)
+    ser = serial.Serial(serialPort)
+
+    with open('nodes.csv') as node_file: 
+        csv_reader = csv.reader(node_file, delimiter=',')
+        line_count = 0
+        for row in csv_reader: 
+            if line_count == 0: 
+                print(f'Column names are {", ".join(row)}')
+                line_count += 1
+            else: 
+                nodes[row[0]] = row[1]
+                line_count += 1
+        print(f'Processed {line_count} lines.')
+        print(nodes)
+
+    with open('devices.csv') as node_file: 
+        csv_reader = csv.reader(node_file, delimiter=',')
+        line_count = 0
+        for row in csv_reader: 
+            if line_count == 0: 
+                print(f'Column names are {", ".join(row)}')
+                line_count += 1
+            else: 
+                readings[row[0]] = row[1]
+                line_count += 1
+        print(f'Processed {line_count} lines.')
+        print(readings)
+
+    main()
