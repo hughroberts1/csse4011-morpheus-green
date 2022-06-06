@@ -22,7 +22,7 @@ bucket = "Weather Data"
 client = InfluxDBClient(url=url, token=token, org=org)
 write_api = client.write_api(write_options=SYNCHRONOUS)
 
-# Format of data will come in as: {"UUID":X, "Time":X, "Reading":{ "Temperature":X, etc}}
+# Format of data will come in as: {"UUID":X,"time":X,"reading":{ "Temperature":X, etc}}
 data = {}
 
 import serial
@@ -82,34 +82,32 @@ def read_data():
         result = ansi_escape.sub('', line)
 
         try: 
+                data = json.loads(result)
 
-            print(result)
+                reading = data["reading"]
+
+                device_id = list(reading.keys())[0]
+
+                device_name = readings[device_id]
+
+                measurement = reading[device_id]
+
+                measurement = float(reading[device_id])
             
-            data = json.loads(result)
 
-            reading = data["reading"]
-            
-            device_id = list(reading.keys())[0]
+                reading2 = {device_name: measurement}
 
-            device_name = readings[device_id]
-
-            measurement = float(reading[device_id])
-            
-
-            reading2 = {device_name: measurement}
-
-            uuid = data["UUID"]
+                uuid = data["UUID"]
 
 
-            point_data = {"measurement": nodes[uuid],
-                         "time": dt.utcnow(),
-                        "fields": reading2     
-                        }
+                point_data = {"measurement": nodes[uuid],
+                                "time": dt.utcnow(),
+                                "fields": reading2     
+                                }
 
-            print(point_data)
+                print(point_data)
 
-            write_api.write(bucket=bucket, org="o.roman@uqconnect.edu.au",\
-                record=point_data)
+                write_api.write(bucket=bucket, org="o.roman@uqconnect.edu.au",record=point_data)
         except Exception as e: 
             #print("\n\n")
             #print("Something went wrong", e)
@@ -142,8 +140,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(args)
-
-    
-
-#write_api.write(bucket=bucket, org="o.roman@uqconnect.edu.au",\
-#                record=point_data)
