@@ -25,13 +25,24 @@ write_api = client.write_api(write_options=SYNCHRONOUS)
 # Format of data will come in as: {"UUID":X,"time":X,"reading":{ "Temperature":X, etc}}
 data = {}
 
+import serial
+import threading
+import re
+import argparse
+from datetime import datetime as dt
+import sys, serial, os, time, json
+
+# Format of data will come in as: {"UUID":X, "Time":X, "Reading":{ "Temperature":X, etc}}
+data = {}
+
 # UUID to node mapping, any new nodes will need to be hardcode added here
 nodes = { 
-         "0x3E2F23DD6FA1B0A00000000000000000": "A",
-         "0x4450023F5FB84EAE0000000000000000": "B",
-         "0x36E2175949D1D4850000000000000000": "C",
-         "0xD684939C4E9ABD390000000000000000": "D"
+         "3e2f23dd6fa1b0a00000000000000000": "A", 
+         "4450023f5fb84eae0000000000000000": "B", 
+         "36e2175949d1d4850000000000000000": "C",
+         "d684939c4e9abd390000000000000000": "D"
         }
+
 
 readings = {
         "1" : "Temperature",
@@ -42,140 +53,85 @@ readings = {
         "6" : "PM10"
 }
 
-#Thread that waits for data to appear on serial port and send it to GUI
-class SerialPort(QThread):
+# 7-bit C1 ANSI sequences
+ansi_escape = re.compile(r'''
+    \x1B  # ESC
+    (?:   # 7-bit C1 Fe (except CSI)
+        [@-Z\\-_]
+    |     # or [ for CSI, followed by a control sequence
+        \[
+        [0-?]*  # Parameter bytes
+        [ -/]*  # Intermediate bytes
+        [@-~]   # Final byte
+    )
+''', re.VERBOSE)
 
-        newData = pyqtSignal(str)
+json_pattern = '\{*\}'
+prog = re.compile(json_pattern)
 
-        def __init__(self, port=None):
-                
-                # Initialise the thread
-                super(SerialPort, self).__init__()
-                self.port = port
-                self.ser = serial.Serial()
-                try:
-                        self.ser = serial.Serial(self.port)
-                except serial.SerialException:
-                        print("Couldn't open serial port")
+def escape_ansi(line):
+    ansi_escape =re.compile(r'(\x9B|\x1B\[)[0-?]*[ -\/]*[@-~]')
+    return ansi_escape.sub('', line)
 
-        def run(self):
-                
-                # Continuously try and read from serial port and send data to to GUI
-                while True:
-                        try:
-                                line = self.ser.readline().decode()
-                                data = json.loads(line)
-                                # Data is sent off to dash board as soon as its read data should 
-                                # come every 5 minutes by default but not necessarily
-                                reading = {readings[data["reading"].keys()[0]]:\
-                                           data["readings"][data["readings"].keys()[0]]}
-                                point_data = {
-                                        "measurement": nodes[data["UUID"]],
-                                        "time": dt.utcnow(),
-                                        "fields": reading     
+ser = serial.Serial("/dev/ttyACM0")
+
+def read_data(): 
+    while True: 
+        line = ser.readline().decode('utf-8').replace("base:~$", "").strip('\n\r')
+
+        result = ansi_escape.sub('', line)
+
+        try: 
+                data = json.loads(result)
+
+                reading = data["reading"]
+
+                device_id = list(reading.keys())[0]
+
+                device_name = readings[device_id]
+
+                measurement = reading[device_id]
+
+
+                reading2 = {device_name: measurement}
+
+                uuid = data["UUID"]
+
+
+                point_data = {"measurement": nodes[uuid],
+                                "time": dt.utcnow(),
+                                "fields": reading2     
                                 }
 
-                                write_api.write(bucket=bucket, org="o.roman@uqconnect.edu.au",\
-                                                record=point_data)
-                                self.newData.emit(line)
-                        except serial.SerialException:
-                                print("Couldn't read serial")
-                                self.ser.close()
-                                self.port = None
-                                break
-                        time.sleep(0.01)
-                        
-'''
-class GUI(QMainWindow):
-        # Main GUI class
-        def __init__(self, parent=None):
-                
-                super(GUI, self).__init__(parent)
-                self.setWindowTitle("GUI")
-                self.serialPort = SerialPort('/dev/ttyACM1')
-                self.serialPort.start()
-                self.serialPort.newData.connect(self.receiveLine)
+                print(point_data)
+
+                write_api.write(bucket=bucket, org="o.roman@uqconnect.edu.au",record=point_data)
+        except Exception as e: 
+                print("Something went wrong", e)
+
+def main(args): 
+    
+
+    p1 = threading.Thread(target=read_data, args=())
+    p1.start()
+
+    while True: 
+        command = input("$:")
+        if command != "": 
+            if command == "exit": 
+                ser.close()
+                break
+            command = command + "\n"
+            ser.write(command.encode("ascii"))
 
 
-        def setupUi(self, MainWindow): 
-                
-                MainWindow.setObjectName("MainWindow")
-                MainWindow.resize(1000,1000)
-                self.centralwidget = QtWidgets.QWidget(MainWindow)
-                self.centralwidget.setObjectName("centralwidget")
-                self.graphicsView = PlotWidget(self.centralwidget)
-                self.graphicsView.setObjectName("graphicsView")
-                MainWindow.setCentralWidget(self.graphicsView)
-                loop = asyncio.get_event_loop()
+if __name__ == "__main__": 
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-v', action='store_true', dest='verbose', required=False)
+    parser.add_argument('-H', action='store', dest='host', required=False, default="localhost")
+    parser.add_argument('-p', action='store', dest='port', type=int, required=False, default="1883")
+    parser.add_argument('-t', action='store', dest='topic', required=False)
+    args = parser.parse_args()
 
-        def gui_update(self, result):
-
-                x_data = [1]
-                y_data = [random.randrange(10)]
-
-                scatter = pg.ScatterPlotItem(x_data, y_data, size=10,\
-                                             brush=[pg.mkBrush(c) for c in "r"])
-                self.graphicsView.clear()
-                self.graphicsView.addItem(scatter)
-                self.graphicsView.setXRange(0,18, padding=0)
-                self.graphicsView.setYRange(0,12, padding=0)
-
-
-        def receiveLine(self, line):
-                self.graphicsView.clear()
-                self.graphicsView.setXRange(0,400, padding=0)
-                self.graphicsView.setYRange(0,400, padding=0)
-                self.graphicsView.showGrid(x=True,y=True)
-                self.graphicsView.setTitle("Mobile Node Position", color="b", size="30pt")
-                styles = {"color": "#f00", "font-size": "20px"}
-                self.graphicsView.setLabel("left", "y coordinate (cm)", **styles)
-                self.graphicsView.setLabel("bottom", "x coordinate (cm)", **styles)
-                self.graphicsView.addLegend()
-                pen = pg.mkPen(color=(255, 0, 0))
-                self.graphicsView.plot(x_data, y_data, name="RSSI", pen=pen, symbol='+',\
-                                       symbolSize=30, symbolBrush=('b'))
-                self.graphicsView.plot(x_dataKal, y_dataKal, name="Kalman", pen=pen, symbol='+',\
-                                       symbolSize=30, symbolBrush=('r'))
-'''
-
-'''
-if __name__ == "__main__":
-        
-        app = QApplication(sys.argv)
-        loop = QEventLoop(app)
-        MainWindow = QtWidgets.QMainWindow()
-        gui = GUI()
-        gui.setupUi(MainWindow)
-        MainWindow.show()
-        with loop: 
-                loop.run_forever()
-        sys.exit(app.exec_())
-'''
-if __name__ == "__main__":
-        
-        
-        s = serial.Serial('/dev/ttyACM0')
-        while True:
-                        try:
-                                line = self.ser.readline().decode()
-                                data = json.loads(line)
-                                # Data is sent off to dash board as soon as its read data should 
-                                # come every 5 minutes by default but not necessarily
-                                reading = {readings[data["reading"].keys()[0]]:\
-                                           data["readings"][data["readings"].keys()[0]]}
-                                point_data = {
-                                        "measurement": nodes[data["UUID"]],
-                                        "time": dt.utcnow(),
-                                        "fields": reading     
-                                }
-
-                                write_api.write(bucket=bucket, org="o.roman@uqconnect.edu.au",\
-                                                record=point_data)
-                                self.newData.emit(line)
-                        except serial.SerialException:
-                                print("Couldn't read serial")
-                                self.ser.close()
-                                self.port = None
-                                break
-                        time.sleep(0.01)
+    main(args)
