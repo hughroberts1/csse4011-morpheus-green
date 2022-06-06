@@ -235,7 +235,8 @@ uint8_t bluetoothListen(void *args)
 		}
 		printk("\", \"time\": \"%d\"", time);
 
-		printk(", \"reading\": {\"%d\": \"%f\"}}\n", device, *((float *)(&data)));
+		float reading = *((float *)(&data));
+		printk(", \"reading\": {\"%d\": \"%f\"}}\n", device, reading);
 
 		k_msleep(PRINT_SLEEP_TIME_MS);
 
@@ -255,7 +256,7 @@ static const struct bt_mesh_model_op sensor_cli_op[] = {
  * @param ctx 
  * @param buf 
  */
-static void gen_onoff_status(struct bt_mesh_model *model,
+static int gen_onoff_status(struct bt_mesh_model *model,
 			     struct bt_mesh_msg_ctx *ctx,
 			     struct net_buf_simple *buf)
 {
@@ -265,6 +266,8 @@ static void gen_onoff_status(struct bt_mesh_model *model,
 	activeNodes[numNodesActive].cdb_node = bt_mesh_cdb_node_get(ctx->addr);
 
 	numNodesActive++;
+
+	return 0;
 }
 
 static const struct bt_mesh_model_op gen_onoff_cli_op[] = {

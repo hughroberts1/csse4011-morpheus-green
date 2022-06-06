@@ -108,7 +108,7 @@ static int send_sensor_data(struct bt_mesh_model *model, struct bt_mesh_msg_ctx 
  * @param ctx 
  * @param buf 
  */
-void sensor_get(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *ctx, struct net_buf_simple *buf)
+static int sensor_get(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *ctx, struct net_buf_simple *buf)
 {
 	printk("Received ");
 	for (int i = 0; i < buf->len; i++) {
@@ -142,6 +142,7 @@ void sensor_get(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *ctx, struct
 				send_sensor_data(model, ctx, device, (double) scu_sensors_pm10_get());
 		}
 	}
+	return 0;
 }
 
 static int onoff_status_send(struct bt_mesh_model *model,
@@ -161,11 +162,12 @@ const struct bt_mesh_model_op sensor_srv_op[] = {
 	BT_MESH_MODEL_OP_END,
 };
 
-static void gen_onoff_get(struct bt_mesh_model *model,
+static int gen_onoff_get(struct bt_mesh_model *model,
 			  struct bt_mesh_msg_ctx *ctx,
 			  struct net_buf_simple *buf)
 {
-	onoff_status_send(model, ctx);
+	return onoff_status_send(model, ctx);
+
 }
 
 static const struct bt_mesh_model_op gen_onoff_srv_op[] = {
