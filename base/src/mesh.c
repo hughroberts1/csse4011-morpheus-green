@@ -212,13 +212,13 @@ uint8_t bluetoothListen(void *args)
 		uint8_t board_type = rxMessage.board_type;
 		memcpy(uuid, &rxMessage.uuid, sizeof(uuid));
 		
-		printk("{UUID: ");
+		printk("{\"UUID\": \"");
 		for (uint8_t i = 0; i < UUID_LENGTH; i++) {
 			printk("%02x", uuid[i]);
 		}
-		printk(", time: %d", time);
+		printk("\", \"time\": \"%d\"", time);
 
-		printk(", reading: {%d: %f}}\n", device, *((float *)(&data)));
+		printk(", \"reading\": {\"%d\": \"%f\"}}\n", device, *((float *)(&data)));
 
 		k_msleep(PRINT_SLEEP_TIME_MS);
 
