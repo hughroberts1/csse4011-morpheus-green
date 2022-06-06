@@ -20,6 +20,7 @@
 
 // Local Library Include
 #include "scu_sensors.h"
+#include "scu_power_management.h"
 
 #ifdef CONFIG_SEN54
 #include "sen5x_i2c.h"
@@ -46,7 +47,19 @@ K_THREAD_DEFINE(scu_sen54_thread_tid, THREAD_SCU_SEN54_POLL_STACK, thread_scu_se
 #endif
 
 // Zeroing the struct that will hold the current sensor data
-struct scuSensorData currentSensorData = {0,0,0,{0,0,0},0,0,0,{0,0,0,0},0};
+struct scuSensorData currentSensorData = {
+	.temperature = 0,
+	.humidity = 0,
+	.pressure = 0,
+	.acceleration[0] = 0,
+	.acceleration[1] = 0, 
+	.acceleration[2] = 0,
+	.voc = 0,
+	.co2 = 0,
+	.nox = 0,
+	.pm10 = 0,
+	.distance = 0,
+};
 
 static int samplingTime = SAMPLING_TIME_DEFAULT;
 
@@ -92,7 +105,7 @@ static void scu_process_lps22hb_sample(void)
  */
 static void scu_process_hts221_sample(void)
 {
-        scu_power_management_on()
+        scu_power_management_on();
 	const struct device *dev = scu_sensors_init("HTS221");
 	struct sensor_value temp, hum;
 
@@ -133,7 +146,7 @@ static void scu_process_hts221_sample(void)
  */
 static void scu_process_lis2dh_sample(void)
 {       
-        scu_power_management_on()
+        scu_power_management_on();
 	const struct device *dev = scu_sensors_init("LIS2DH");
 	struct sensor_value accel[3];
 	int err = sensor_sample_fetch(dev);
@@ -170,7 +183,7 @@ static void scu_process_lis2dh_sample(void)
  */
 static void scu_process_ccs811_sample(void)
 {       
-scu_power_management_on()
+scu_power_management_on();
 	const struct device *dev = scu_sensors_init("CCS811");
 	struct sensor_value tvoc, co2;
 	int err = 0;
@@ -307,7 +320,7 @@ static void scu_process_sen54_sample(struct scuSensorData *data)
  * @brief Function used to poll all data sources from the SEN54, store in the global sensor data
  * 	  struct and print to console
  */
-static void thread_scu_sen54_poll(void)
+void thread_scu_sen54_poll(void)
 {
 	scu_sensors_init("SEN54");
 	int err = sen5x_start_measurement();
