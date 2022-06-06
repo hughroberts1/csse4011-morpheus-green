@@ -105,7 +105,7 @@ def read_data():
 
             print(point_data)
         except Exception as e: 
-            print("fucked up", e)
+            print("Something went wrong", e)
 
 def main(args): 
     
