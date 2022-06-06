@@ -82,6 +82,9 @@ def read_data():
         result = ansi_escape.sub('', line)
 
         try: 
+
+            print(result)
+            
             data = json.loads(result)
 
             reading = data["reading"]
@@ -90,7 +93,7 @@ def read_data():
 
             device_name = readings[device_id]
 
-            measurement = reading[device_id]
+            measurement = float(reading[device_id])
             
 
             reading2 = {device_name: measurement}
@@ -108,7 +111,10 @@ def read_data():
             write_api.write(bucket=bucket, org="o.roman@uqconnect.edu.au",\
                 record=point_data)
         except Exception as e: 
-            print("Something went wrong", e)
+            #print("\n\n")
+            #print("Something went wrong", e)
+            #print("\n")
+            pass
 
 def main(args): 
     
