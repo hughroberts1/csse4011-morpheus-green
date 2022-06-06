@@ -47,6 +47,10 @@ K_THREAD_DEFINE(command_line, COMMAND_LINE_STACK_SIZE, command_line_thread, NULL
 
 LOG_MODULE_REGISTER(base, LOG_LEVEL_DBG);
 
+/**
+ * @brief Waits for data to be ready from the device
+ * 
+ */
 void command_line_thread(void) {
 	/* Setup DTR */
 	const struct device *console_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
@@ -85,5 +89,6 @@ void main(void)
 		return;
 	}
 
+	// continuously provision for new nodes
 	provision();
 }

@@ -55,11 +55,6 @@ static const uint16_t app_idx = 0;
 static uint16_t self_addr = 1, node_addr;
 static uint8_t node_uuid[UUID_LENGTH]; 
 
-typedef struct {
-	uint8_t board_type; 
-	struct bt_mesh_cdb_node* cdb_node; 
-} node;
-
 static node activeNodes[MAX_NODES];
 static uint8_t numNodesActive = 0; 
 
@@ -79,11 +74,10 @@ uint8_t continuous_on = 0;
 
 K_THREAD_DEFINE(list_nodes_thread, LIST_NODES_THREAD_STACK_SIZE, thread_list_nodes, NULL, NULL, NULL, LIST_NODES_THREAD_PRIORITY, 0, 0);
 
-struct Map {
-	uint8_t device_id; 
-	char* device_name;
-};
-
+/**
+ * @brief Records device ID with their name (string)
+ * 
+ */
 struct Map devices[NUM_DEVICES] = {
 	{.device_id = TEMPERATURE, .device_name = "TEMPERATURE"},
 	{.device_id = PRESSURE, .device_name = "PRESSURE"},
@@ -93,6 +87,11 @@ struct Map devices[NUM_DEVICES] = {
 	{.device_id = PM10, .device_name = "PM10"},
 };
 
+/**
+ * @brief Thread for continuously sampling all devices from all nodes in the network
+ * 
+ * @param argv 
+ */
 void continuous_sampling(void *argv)
 {
 	while (1) {
@@ -111,6 +110,12 @@ void continuous_sampling(void *argv)
 
 K_THREAD_DEFINE(cont_sampling_thread, CONTINUOUS_THREAD_STACK_SIZE, continuous_sampling, NULL, NULL, NULL, CONTINUOUS_THREAD_PRIORITY, 0, 0);
 
+/**
+ * @brief Get the string corresponding to device_id
+ * 
+ * @param device_id 
+ * @return char* 
+ */
 char* get_device_name(uint8_t device_id)
 {
 	for (uint8_t i = 0; i < NUM_DEVICES; i++) {
@@ -172,6 +177,15 @@ static struct bt_mesh_health_cli health_cli = {
 	.current_status = health_current_status,
 };
 
+/**
+ * @brief Callback for when a node replies with their sensor reading. 
+ * Add the message received to a queue
+ * 
+ * @param model 
+ * @param ctx 
+ * @param buf 
+ * @return int 
+ */
 static int sensor_status(struct bt_mesh_model *model, 
 				struct bt_mesh_msg_ctx *ctx, 
 				struct net_buf_simple *buf)
@@ -212,9 +226,9 @@ uint8_t bluetoothListen(void *args)
 		uint32_t time = rxMessage.time;
 		uint32_t data = rxMessage.data;
 		uint8_t device = rxMessage.device;
-		uint8_t board_type = rxMessage.board_type;
 		memcpy(uuid, &rxMessage.uuid, sizeof(uuid));
 		
+		// print out message in JSON format for python listener script
 		printk("{\"UUID\": \"");
 		for (uint8_t i = 0; i < UUID_LENGTH; i++) {
 			printk("%02x", uuid[i]);
@@ -229,12 +243,18 @@ uint8_t bluetoothListen(void *args)
 	return 0;
 }
 
-
 static const struct bt_mesh_model_op sensor_cli_op[] = {
 	{SENSOR_STATUS, BT_MESH_LEN_MIN(1), sensor_status},
 	BT_MESH_MODEL_OP_END,
 };
 
+/**
+ * @brief Callback for when a ping response is received
+ * 
+ * @param model 
+ * @param ctx 
+ * @param buf 
+ */
 static void gen_onoff_status(struct bt_mesh_model *model,
 			     struct bt_mesh_msg_ctx *ctx,
 			     struct net_buf_simple *buf)
@@ -252,6 +272,10 @@ static const struct bt_mesh_model_op gen_onoff_cli_op[] = {
 	BT_MESH_MODEL_OP_END,
 };
 
+/**
+ * @brief Node models
+ * 
+ */
 static struct bt_mesh_model models[] = {
 	BT_MESH_MODEL_CFG_SRV,
 	BT_MESH_MODEL_CFG_CLI(&cfg_cli),
@@ -264,16 +288,30 @@ static struct bt_mesh_model models[] = {
 		      NULL),
 };
 
+/**
+ * @brief Node elements
+ * 
+ */
 static struct bt_mesh_elem elements[] = {
 	BT_MESH_ELEM(0, models, BT_MESH_MODEL_NONE),
 };
 
+/**
+ * @brief Node composition
+ * 
+ */
 static const struct bt_mesh_comp comp = {
 	.cid = BT_COMP_ID_LF,
 	.elem = elements,
 	.elem_count = ARRAY_SIZE(elements),
 };
 
+/**
+ * @brief Send a request to all nodes in the network for the device reading 
+ * 
+ * @param device device (sensor) to sample
+ * @return int error code
+ */
 int sensor_request(uint8_t device)
 {
 	struct bt_mesh_msg_ctx ctx = {
@@ -297,23 +335,36 @@ int sensor_request(uint8_t device)
 	net_buf_simple_add_le32(&buf, currentTime);
 	net_buf_simple_add_u8(&buf, device);
 
-	//printk("Sending request for device %d (%s) at system time %d\n", device, get_device_name(device),  currentTime);
-	
 	return bt_mesh_model_send(&models[SENSOR_CLIENT_MODEL], &ctx, &buf, NULL, NULL);
 }
 
+/**
+ * @brief Start continunous sampling
+ * 
+ * @return int 
+ */
 int sensor_continuous_on(void)
 {
 	continuous_on = 1; 
 	return 0; 
 }
 
+/**
+ * @brief Stop continuous sampling 
+ * 
+ * @return int 
+ */
 int sensor_continuous_off(void)
 {
 	continuous_on = 0; 
 	return 0; 
 }
 
+/**
+ * @brief Configure the base node
+ * 
+ * @param self 
+ */
 static void configure_self(struct bt_mesh_cdb_node *self)
 {
 	struct bt_mesh_cdb_app_key *key;
@@ -371,7 +422,11 @@ static void configure_self(struct bt_mesh_cdb_node *self)
 	printk("Configuration complete\n");
 }
 
-
+/**
+ * @brief Configure a Configuration data base node
+ * 
+ * @param node 
+ */
 static void configure_node(struct bt_mesh_cdb_node *node)
 {
 	NET_BUF_SIMPLE_DEFINE(buf, BT_MESH_RX_SDU_MAX);
@@ -463,6 +518,13 @@ static void configure_node(struct bt_mesh_cdb_node *node)
 	printk("Configuration complete\n");
 }
 
+/**
+ * @brief Check if a node is configured
+ * 
+ * @param node 
+ * @param data 
+ * @return uint8_t 
+ */
 static uint8_t check_unconfigured(struct bt_mesh_cdb_node *node, void *data)
 {
 	if (!atomic_test_bit(node->flags, BT_MESH_CDB_NODE_CONFIGURED)) {
@@ -476,6 +538,10 @@ static uint8_t check_unconfigured(struct bt_mesh_cdb_node *node, void *data)
 	return BT_MESH_CDB_ITER_CONTINUE;
 }
 
+/**
+ * @brief Thread to continuous provision all beacons to join the mesh network 
+ * 
+ */
 void provision(void)
 {
     char uuid_hex_str[32 + 1];
@@ -512,6 +578,13 @@ void provision(void)
     }
 }
 
+/**
+ * @brief Callback for unprovisioned beacon received
+ * 
+ * @param uuid 
+ * @param oob_info 
+ * @param uri_hash 
+ */
 static void unprovisioned_beacon(uint8_t uuid[UUID_LENGTH],
 				 bt_mesh_prov_oob_info_t oob_info,
 				 uint32_t *uri_hash)
@@ -520,12 +593,24 @@ static void unprovisioned_beacon(uint8_t uuid[UUID_LENGTH],
 	k_sem_give(&sem_unprov_beacon);
 }
 
+/**
+ * @brief Callback for mesh node added
+ * 
+ * @param net_idx 
+ * @param uuid 
+ * @param addr 
+ * @param num_elem 
+ */
 static void node_added(uint16_t net_idx, uint8_t uuid[UUID_LENGTH], uint16_t addr, uint8_t num_elem)
 {
 	node_addr = addr;
 	k_sem_give(&sem_node_added);
 }
 
+/**
+ * @brief Set the up Configuration Data base for provisioning
+ * 
+ */
 static void setup_cdb(void)
 {
 	struct bt_mesh_cdb_app_key *key;
@@ -543,6 +628,11 @@ static void setup_cdb(void)
 	}
 }
 
+/**
+ * @brief Initialise the bluetooth mesh network 
+ * 
+ * @return int error code
+ */
 static int mesh_init(void)
 {
     static uint8_t dev_uuid[UUID_LENGTH];
@@ -567,6 +657,11 @@ static int mesh_init(void)
     return err;
 }
 
+/**
+ * @brief Callback function for bluetooth subsystem ready 
+ * 
+ * @param err error code
+ */
 static void bt_ready(int err)
 {
 	uint8_t net_key[16], dev_key[16];
@@ -612,6 +707,11 @@ static void bt_ready(int err)
 	}
 }
 
+/**
+ * @brief Send a ping to all nodes in the network 
+ * 
+ * @return int 
+ */
 static int gen_onoff_send(void)
 {
 	struct bt_mesh_msg_ctx ctx = {
@@ -636,6 +736,11 @@ static int gen_onoff_send(void)
 	return bt_mesh_model_send(&models[GEN_ONOFF_CLIENT_MODEL], &ctx, &buf, NULL, NULL);
 }
 
+/**
+ * @brief List all active nodes in the mesh network 
+ * 
+ * @return int 
+ */
 int list_nodes(void)
 {
 	gen_onoff_send();
@@ -644,6 +749,10 @@ int list_nodes(void)
 	return 0;
 }
 
+/**
+ * @brief Thread to wait for all nodes to reply to ping message
+ * 
+ */
 void thread_list_nodes(void)
 {
 	while (1) {
@@ -668,19 +777,31 @@ void thread_list_nodes(void)
 	}
 }
 
+/**
+ * @brief Set the sample period 
+ * 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int set_sample_period(size_t argc, char** argv) 
 {
 	int seconds = atoi(argv[1]);
-	if (seconds <= 2) {
-		seconds = 2;
+	if (seconds <= MIN_SAMPLING_PERIOD_SECONDS) {
+		seconds = MIN_SAMPLING_PERIOD_SECONDS;
 	} 
-	if (seconds >= 5 * 60) {
-		seconds = 5 * 60; 
+	if (seconds >= MAX_SAMPLING_PERIOD_SECONDS) {
+		seconds = MAX_SAMPLING_PERIOD_SECONDS; 
 	}
 	sampling_period = 1000 * seconds; 
 	return 0; 
 }
 
+/**
+ * @brief Initialise bluetooth subsystem
+ * 
+ * @return int error code
+ */
 int bt_init(void)
 {
 	return bt_enable(bt_ready);
