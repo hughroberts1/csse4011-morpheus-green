@@ -17,5 +17,8 @@
 // Controls just the CCS power
 #define CCS_NODE DT_NODELABEL(ccs_pwr)
 
+void scu_power_management_on(void);
+void scu_power_management_off(void);
+
 
 #endif

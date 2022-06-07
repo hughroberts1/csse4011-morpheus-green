@@ -31,6 +31,7 @@ write_api = client.write_api(write_options=SYNCHRONOUS)
 # Format of data will come in as: {"UUID":X, "Time":X, "Reading":{ "Temperature":X, etc}}
 data = {}
 
+
 nodes = {}
 readings = {}
 

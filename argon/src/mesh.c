@@ -22,9 +22,14 @@
 #include "mesh.h"
 #include "scu_sensors.h"
 
-
 uint32_t currentTime = 0;
 
+/**
+ * @brief Increment the current time every milisecond. Time Synchronised
+ * to the base time
+ * 
+ * @param argv 
+ */
 void timer_func(void* argv) 
 {    
     while(1) {
@@ -58,6 +63,15 @@ static struct bt_mesh_health_srv health_srv = {
 
 BT_MESH_HEALTH_PUB_DEFINE(health_pub, 0);
 
+/**
+ * @brief Send response to sensor get request
+ * 
+ * @param model 
+ * @param ctx 
+ * @param device 
+ * @param data 
+ * @return int  error code
+ */
 static int send_sensor_data(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *ctx, uint8_t device, float data)
 {
 	if (bt_mesh_is_provisioned()) {
@@ -87,7 +101,14 @@ static int send_sensor_data(struct bt_mesh_model *model, struct bt_mesh_msg_ctx 
 	return 0; 
 }
 
-void sensor_get(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *ctx, struct net_buf_simple *buf)
+/**
+ * @brief Callback for when node receives a sensor get request
+ * 
+ * @param model 
+ * @param ctx 
+ * @param buf 
+ */
+static int sensor_get(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *ctx, struct net_buf_simple *buf)
 {
 	printk("Received ");
 	for (int i = 0; i < buf->len; i++) {
@@ -121,7 +142,7 @@ void sensor_get(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *ctx, struct
 				send_sensor_data(model, ctx, device, (double) scu_sensors_pm10_get());
 		}
 	}
-
+	return 0;
 }
 
 static int onoff_status_send(struct bt_mesh_model *model,
@@ -141,11 +162,12 @@ const struct bt_mesh_model_op sensor_srv_op[] = {
 	BT_MESH_MODEL_OP_END,
 };
 
-static void gen_onoff_get(struct bt_mesh_model *model,
+static int gen_onoff_get(struct bt_mesh_model *model,
 			  struct bt_mesh_msg_ctx *ctx,
 			  struct net_buf_simple *buf)
 {
-	onoff_status_send(model, ctx);
+	return onoff_status_send(model, ctx);
+
 }
 
 static const struct bt_mesh_model_op gen_onoff_srv_op[] = {
@@ -153,6 +175,10 @@ static const struct bt_mesh_model_op gen_onoff_srv_op[] = {
 	BT_MESH_MODEL_OP_END,
 };
 
+/**
+ * @brief Node models
+ * 
+ */
 static struct bt_mesh_model models[] = {
 	BT_MESH_MODEL_CFG_SRV,
 	BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
@@ -163,16 +189,29 @@ static struct bt_mesh_model models[] = {
 	BT_MESH_MODEL(BT_MESH_MODEL_ID_SENSOR_SRV, sensor_srv_op, NULL, NULL),
 };
 
+/**
+ * @brief Node elements
+ * 
+ */
 static struct bt_mesh_elem elements[] = {
 	BT_MESH_ELEM(0, models, BT_MESH_MODEL_NONE),
 };
 
+/**
+ * @brief Node composition
+ * 
+ */
 static const struct bt_mesh_comp comp = {
 	.cid = BT_COMP_ID_LF,
 	.elem = elements,
 	.elem_count = ARRAY_SIZE(elements),
 };
 
+/**
+ * @brief Initialise bluetooth mesh
+ * 
+ * @return int error code
+ */
 static int mesh_init(void)
 {
     static uint8_t dev_uuid[16];
@@ -193,9 +232,13 @@ static int mesh_init(void)
 
     err = bt_mesh_init(&prov, &comp);
     return err;
-
 }
 
+/**
+ * @brief Callback for bluetooth init ready
+ * 
+ * @param err error code
+ */
 static void bt_ready(int err)
 {
 	if (err) {
@@ -223,6 +266,11 @@ static void bt_ready(int err)
 	printk("Mesh initialized\n");
 }
 
+/**
+ * @brief Initialise bluetooth subsystem
+ * 
+ * @return int error code
+ */
 int bt_init(void)
 {
     return bt_enable(bt_ready);

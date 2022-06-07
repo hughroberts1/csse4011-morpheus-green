@@ -11,6 +11,8 @@
 #include <devicetree.h>
 #include <drivers/gpio.h>
 
+#include <drivers/regulator.h>
+
 /* Local Library Include */
 #include "scu_power_management.h"
 
