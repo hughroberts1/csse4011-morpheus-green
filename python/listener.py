@@ -20,7 +20,6 @@ from datetime import datetime as dt
 import csv
 
 token = os.environ.get("INFLUXDB_TOKEN")
-print(token)
 org = "o.roman@uqconnect.edu.au"
 url = "https://us-east-1-1.aws.cloud2.influxdata.com"
 bucket = "Weather Data"
@@ -30,8 +29,6 @@ write_api = client.write_api(write_options=SYNCHRONOUS)
 
 # Format of data will come in as: {"UUID":X, "Time":X, "Reading":{ "Temperature":X, etc}}
 data = {}
-
-
 nodes = {}
 readings = {}
 
