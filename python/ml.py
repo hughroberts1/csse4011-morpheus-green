@@ -13,7 +13,9 @@ from sklearn import metrics
 import pandas as pd
 import matplotlib.pyplot as plt
 import webscraper
-# Trains KNN with full training set and takes sensor readings X_in to give a prediction y_predit
+
+
+# Trains KNN with full training set and takes sensor readings X_in to give a prediction y_predict
 # as to whether it will rain tomorrow
 def knn_train_realtime(X_in):
         
@@ -25,8 +27,10 @@ def knn_train_realtime(X_in):
         model = KNeighborsClassifier(n_neighbors=20)
         model.fit(X_train, y_train)
         y_predict = model.predict(X_test)
-        print("Accuracy:", model.score(X_test, y_test))
+        return y_predict
 
+# Trains Random Forest with full training set and takes sensor readings X_in to give a prediction
+# y_predict as to whether it will rain tomorrow
 def rf_train_realtime(X_in):
         X_train = df[features]
         y_train = df['Rain Tomorrow']
@@ -36,9 +40,9 @@ def rf_train_realtime(X_in):
         model = RandomForestClassifier(n_estimators=500)
         model.fit(X_train, y_train)
         y_predict = model.predict(X_test)
-        print("Accuracy:", metrics.accuracy_score(y_test, y_predict))
+        return y_predict
 
-
+#real_time_df = pd.read_csv('real_time_weather_data.csv')
 df = pd.read_csv('weather_data.csv')
 # Add column for if it will rain tomorrow
 rain_tmr = []
@@ -55,6 +59,7 @@ rain_tmr.append(0)
 df["Rain Tomorrow"] = rain_tmr
 
 df = df.fillna(0, axis = "columns")
+# Remove this when we want to add back in mm of rain data
 
 features = ["Avg Temperature", "Max Temperature", "Min Temperature",\
             "Avg Humidity", "Max Humidity", "Min Humidity",\
@@ -64,6 +69,17 @@ df[["Avg Temperature", "Max Temperature", "Min Temperature", "Avg Humidity", "Av
     "mm of Rain", "Rain Tomorrow"]]\
 = df[["Avg Temperature", "Max Temperature", "Min Temperature", "Avg Humidity", "Avg Pressure",\
       "mm of Rain", "Rain Tomorrow"]].apply(pd.to_numeric)
+
+'''
+features = ["Avg Temperature", "Max Temperature", "Min Temperature",\
+            "Avg Humidity", "Max Humidity", "Min Humidity",\
+            "Avg Pressure", "Max Pressure", "Min Pressure"]
+# Changing the types of all data columns to be a numerical type
+df[["Avg Temperature", "Max Temperature", "Min Temperature", "Avg Humidity", "Avg Pressure",\
+    "Rain Tomorrow"]]\
+= df[["Avg Temperature", "Max Temperature", "Min Temperature", "Avg Humidity", "Avg Pressure",\
+      "Rain Tomorrow"]].apply(pd.to_numeric)      
+'''
 
 X = df[features]
 y = df['Rain Tomorrow']

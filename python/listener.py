@@ -27,6 +27,7 @@ bucket = "Weather Data"
 client = InfluxDBClient(url=url, token=token, org=org)
 write_api = client.write_api(write_options=SYNCHRONOUS)
 
+
 # Format of data will come in as: {"UUID":X, "Time":X, "Reading":{ "Temperature":X, etc}}
 data = {}
 
